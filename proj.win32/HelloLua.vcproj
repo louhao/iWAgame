@@ -201,6 +201,38 @@
 				RelativePath="..\Classes\AppDelegate.h"
 				>
 			</File>
+			<File
+				RelativePath="..\Classes\iWA.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\iWA_Auth.c"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\iWA_Basic.c"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\iWA_Crypto.c"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\iWA_Net.c"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\iWA_World.c"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\ODSocket.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Classes\ODSocket.h"
+				>
+			</File>
 			<Filter
 				Name="cocos2dx_support"
 				>
@@ -250,6 +282,86 @@
 				</File>
 				<File
 					RelativePath="..\..\..\scripting\lua\cocos2dx_support\tolua_fix.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="bignumber"
+				>
+				<File
+					RelativePath="..\Classes\bn\bn_add.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_asm.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_ctx.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_div.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_exp.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_gcd.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_lib.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_mod.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_mont.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_mul.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_print.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_rand.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_recp.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_shift.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_sqr.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\bn_word.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\mem.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\mem_clr.c"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\bn\sha1.c"
 					>
 				</File>
 			</Filter>

@@ -7,6 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		057ABC05168348AE00C2A4B6 /* iWA_Auth.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABBFD168348AE00C2A4B6 /* iWA_Auth.c */; };
+		057ABC06168348AE00C2A4B6 /* iWA_Basic.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABBFE168348AE00C2A4B6 /* iWA_Basic.c */; };
+		057ABC07168348AE00C2A4B6 /* iWA_Crypto.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABBFF168348AE00C2A4B6 /* iWA_Crypto.c */; };
+		057ABC08168348AE00C2A4B6 /* iWA_Net.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC00168348AE00C2A4B6 /* iWA_Net.c */; };
+		057ABC09168348AE00C2A4B6 /* iWA_World.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC01168348AE00C2A4B6 /* iWA_World.c */; };
+		057ABC0A168348AE00C2A4B6 /* ODSocket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC03168348AE00C2A4B6 /* ODSocket.cpp */; };
+		057ABC25168348C800C2A4B6 /* bn_add.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC0C168348C800C2A4B6 /* bn_add.c */; };
+		057ABC26168348C800C2A4B6 /* bn_asm.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC0D168348C800C2A4B6 /* bn_asm.c */; };
+		057ABC27168348C800C2A4B6 /* bn_ctx.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC0E168348C800C2A4B6 /* bn_ctx.c */; };
+		057ABC28168348C800C2A4B6 /* bn_div.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC0F168348C800C2A4B6 /* bn_div.c */; };
+		057ABC29168348C800C2A4B6 /* bn_exp.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC10168348C800C2A4B6 /* bn_exp.c */; };
+		057ABC2A168348C800C2A4B6 /* bn_gcd.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC11168348C800C2A4B6 /* bn_gcd.c */; };
+		057ABC2B168348C800C2A4B6 /* bn_lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC13168348C800C2A4B6 /* bn_lib.c */; };
+		057ABC2C168348C800C2A4B6 /* bn_mod.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC14168348C800C2A4B6 /* bn_mod.c */; };
+		057ABC2D168348C800C2A4B6 /* bn_mont.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC15168348C800C2A4B6 /* bn_mont.c */; };
+		057ABC2E168348C800C2A4B6 /* bn_mul.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC16168348C800C2A4B6 /* bn_mul.c */; };
+		057ABC2F168348C800C2A4B6 /* bn_print.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC18168348C800C2A4B6 /* bn_print.c */; };
+		057ABC30168348C800C2A4B6 /* bn_rand.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC19168348C800C2A4B6 /* bn_rand.c */; };
+		057ABC31168348C800C2A4B6 /* bn_recp.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC1A168348C800C2A4B6 /* bn_recp.c */; };
+		057ABC32168348C800C2A4B6 /* bn_shift.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC1B168348C800C2A4B6 /* bn_shift.c */; };
+		057ABC33168348C800C2A4B6 /* bn_sqr.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC1C168348C800C2A4B6 /* bn_sqr.c */; };
+		057ABC34168348C800C2A4B6 /* bn_word.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC1D168348C800C2A4B6 /* bn_word.c */; };
+		057ABC35168348C800C2A4B6 /* mem_clr.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC21168348C800C2A4B6 /* mem_clr.c */; };
+		057ABC36168348C800C2A4B6 /* mem.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC22168348C800C2A4B6 /* mem.c */; };
+		057ABC37168348C800C2A4B6 /* sha1.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC23168348C800C2A4B6 /* sha1.c */; };
 		15426A3615B571D700712A7F /* libcocos2dx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 15426A3315B571B300712A7F /* libcocos2dx.a */; };
 		15426A5915B5722100712A7F /* CDAudioManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 15426A4315B5722100712A7F /* CDAudioManager.m */; };
 		15426A5A15B5722100712A7F /* CDOpenALSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 15426A4615B5722100712A7F /* CDOpenALSupport.m */; };
@@ -106,6 +131,39 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		057ABBFD168348AE00C2A4B6 /* iWA_Auth.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = iWA_Auth.c; path = ../Classes/iWA_Auth.c; sourceTree = "<group>"; };
+		057ABBFE168348AE00C2A4B6 /* iWA_Basic.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = iWA_Basic.c; path = ../Classes/iWA_Basic.c; sourceTree = "<group>"; };
+		057ABBFF168348AE00C2A4B6 /* iWA_Crypto.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = iWA_Crypto.c; path = ../Classes/iWA_Crypto.c; sourceTree = "<group>"; };
+		057ABC00168348AE00C2A4B6 /* iWA_Net.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = iWA_Net.c; path = ../Classes/iWA_Net.c; sourceTree = "<group>"; };
+		057ABC01168348AE00C2A4B6 /* iWA_World.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = iWA_World.c; path = ../Classes/iWA_World.c; sourceTree = "<group>"; };
+		057ABC02168348AE00C2A4B6 /* iWA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = iWA.h; path = ../Classes/iWA.h; sourceTree = "<group>"; };
+		057ABC03168348AE00C2A4B6 /* ODSocket.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ODSocket.cpp; path = ../Classes/ODSocket.cpp; sourceTree = "<group>"; };
+		057ABC04168348AE00C2A4B6 /* ODSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ODSocket.h; path = ../Classes/ODSocket.h; sourceTree = "<group>"; };
+		057ABC0C168348C800C2A4B6 /* bn_add.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_add.c; path = ../Classes/bn/bn_add.c; sourceTree = "<group>"; };
+		057ABC0D168348C800C2A4B6 /* bn_asm.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_asm.c; path = ../Classes/bn/bn_asm.c; sourceTree = "<group>"; };
+		057ABC0E168348C800C2A4B6 /* bn_ctx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_ctx.c; path = ../Classes/bn/bn_ctx.c; sourceTree = "<group>"; };
+		057ABC0F168348C800C2A4B6 /* bn_div.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_div.c; path = ../Classes/bn/bn_div.c; sourceTree = "<group>"; };
+		057ABC10168348C800C2A4B6 /* bn_exp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_exp.c; path = ../Classes/bn/bn_exp.c; sourceTree = "<group>"; };
+		057ABC11168348C800C2A4B6 /* bn_gcd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_gcd.c; path = ../Classes/bn/bn_gcd.c; sourceTree = "<group>"; };
+		057ABC12168348C800C2A4B6 /* bn_lcl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bn_lcl.h; path = ../Classes/bn/bn_lcl.h; sourceTree = "<group>"; };
+		057ABC13168348C800C2A4B6 /* bn_lib.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_lib.c; path = ../Classes/bn/bn_lib.c; sourceTree = "<group>"; };
+		057ABC14168348C800C2A4B6 /* bn_mod.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_mod.c; path = ../Classes/bn/bn_mod.c; sourceTree = "<group>"; };
+		057ABC15168348C800C2A4B6 /* bn_mont.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_mont.c; path = ../Classes/bn/bn_mont.c; sourceTree = "<group>"; };
+		057ABC16168348C800C2A4B6 /* bn_mul.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_mul.c; path = ../Classes/bn/bn_mul.c; sourceTree = "<group>"; };
+		057ABC17168348C800C2A4B6 /* bn_prime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bn_prime.h; path = ../Classes/bn/bn_prime.h; sourceTree = "<group>"; };
+		057ABC18168348C800C2A4B6 /* bn_print.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_print.c; path = ../Classes/bn/bn_print.c; sourceTree = "<group>"; };
+		057ABC19168348C800C2A4B6 /* bn_rand.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_rand.c; path = ../Classes/bn/bn_rand.c; sourceTree = "<group>"; };
+		057ABC1A168348C800C2A4B6 /* bn_recp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_recp.c; path = ../Classes/bn/bn_recp.c; sourceTree = "<group>"; };
+		057ABC1B168348C800C2A4B6 /* bn_shift.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_shift.c; path = ../Classes/bn/bn_shift.c; sourceTree = "<group>"; };
+		057ABC1C168348C800C2A4B6 /* bn_sqr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_sqr.c; path = ../Classes/bn/bn_sqr.c; sourceTree = "<group>"; };
+		057ABC1D168348C800C2A4B6 /* bn_word.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bn_word.c; path = ../Classes/bn/bn_word.c; sourceTree = "<group>"; };
+		057ABC1E168348C800C2A4B6 /* bn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bn.h; path = ../Classes/bn/bn.h; sourceTree = "<group>"; };
+		057ABC1F168348C800C2A4B6 /* cryptlib.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cryptlib.h; path = ../Classes/bn/cryptlib.h; sourceTree = "<group>"; };
+		057ABC20168348C800C2A4B6 /* e_os.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = e_os.h; path = ../Classes/bn/e_os.h; sourceTree = "<group>"; };
+		057ABC21168348C800C2A4B6 /* mem_clr.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mem_clr.c; path = ../Classes/bn/mem_clr.c; sourceTree = "<group>"; };
+		057ABC22168348C800C2A4B6 /* mem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mem.c; path = ../Classes/bn/mem.c; sourceTree = "<group>"; };
+		057ABC23168348C800C2A4B6 /* sha1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sha1.c; path = ../Classes/bn/sha1.c; sourceTree = "<group>"; };
+		057ABC24168348C800C2A4B6 /* sha1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sha1.h; path = ../Classes/bn/sha1.h; sourceTree = "<group>"; };
 		15426A2B15B571B300712A7F /* cocos2dx.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = cocos2dx.xcodeproj; path = ../../../cocos2dx/proj.ios/cocos2dx.xcodeproj; sourceTree = "<group>"; };
 		15426A3F15B5722100712A7F /* Export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Export.h; sourceTree = "<group>"; };
 		15426A4015B5722100712A7F /* SimpleAudioEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleAudioEngine.h; sourceTree = "<group>"; };
@@ -119,7 +177,7 @@
 		15426A4915B5722100712A7F /* SimpleAudioEngine.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = SimpleAudioEngine.mm; sourceTree = "<group>"; };
 		15426A4A15B5722100712A7F /* SimpleAudioEngine_objc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleAudioEngine_objc.h; sourceTree = "<group>"; };
 		15426A4B15B5722100712A7F /* SimpleAudioEngine_objc.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SimpleAudioEngine_objc.m; sourceTree = "<group>"; };
-		1D6058910D05DD3D006BFB54 /* HelloLua.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HelloLua.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1D6058910D05DD3D006BFB54 /* iWAgame.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iWAgame.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		506EDB87102F4C4000A389B3 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		506EDBA4102F4C9F00A389B3 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		78947C5E14EBB9B000DBD5A6 /* background.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = background.mp3; sourceTree = "<group>"; };
@@ -250,6 +308,38 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		057ABC0B168348B200C2A4B6 /* bignumber */ = {
+			isa = PBXGroup;
+			children = (
+				057ABC0C168348C800C2A4B6 /* bn_add.c */,
+				057ABC0D168348C800C2A4B6 /* bn_asm.c */,
+				057ABC0E168348C800C2A4B6 /* bn_ctx.c */,
+				057ABC0F168348C800C2A4B6 /* bn_div.c */,
+				057ABC10168348C800C2A4B6 /* bn_exp.c */,
+				057ABC11168348C800C2A4B6 /* bn_gcd.c */,
+				057ABC12168348C800C2A4B6 /* bn_lcl.h */,
+				057ABC13168348C800C2A4B6 /* bn_lib.c */,
+				057ABC14168348C800C2A4B6 /* bn_mod.c */,
+				057ABC15168348C800C2A4B6 /* bn_mont.c */,
+				057ABC16168348C800C2A4B6 /* bn_mul.c */,
+				057ABC17168348C800C2A4B6 /* bn_prime.h */,
+				057ABC18168348C800C2A4B6 /* bn_print.c */,
+				057ABC19168348C800C2A4B6 /* bn_rand.c */,
+				057ABC1A168348C800C2A4B6 /* bn_recp.c */,
+				057ABC1B168348C800C2A4B6 /* bn_shift.c */,
+				057ABC1C168348C800C2A4B6 /* bn_sqr.c */,
+				057ABC1D168348C800C2A4B6 /* bn_word.c */,
+				057ABC1E168348C800C2A4B6 /* bn.h */,
+				057ABC1F168348C800C2A4B6 /* cryptlib.h */,
+				057ABC20168348C800C2A4B6 /* e_os.h */,
+				057ABC21168348C800C2A4B6 /* mem_clr.c */,
+				057ABC22168348C800C2A4B6 /* mem.c */,
+				057ABC23168348C800C2A4B6 /* sha1.c */,
+				057ABC24168348C800C2A4B6 /* sha1.h */,
+			);
+			name = bignumber;
+			sourceTree = "<group>";
+		};
 		15426A2C15B571B300712A7F /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -297,7 +387,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				1D6058910D05DD3D006BFB54 /* HelloLua.app */,
+				1D6058910D05DD3D006BFB54 /* iWAgame.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -375,6 +465,15 @@
 		BF82F41413A864B000616D55 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				057ABC0B168348B200C2A4B6 /* bignumber */,
+				057ABBFD168348AE00C2A4B6 /* iWA_Auth.c */,
+				057ABBFE168348AE00C2A4B6 /* iWA_Basic.c */,
+				057ABBFF168348AE00C2A4B6 /* iWA_Crypto.c */,
+				057ABC00168348AE00C2A4B6 /* iWA_Net.c */,
+				057ABC01168348AE00C2A4B6 /* iWA_World.c */,
+				057ABC02168348AE00C2A4B6 /* iWA.h */,
+				057ABC03168348AE00C2A4B6 /* ODSocket.cpp */,
+				057ABC04168348AE00C2A4B6 /* ODSocket.h */,
 				BF82F41513A864D700616D55 /* AppDelegate.cpp */,
 				BF82F41613A864D700616D55 /* AppDelegate.h */,
 			);
@@ -526,7 +625,7 @@
 			);
 			name = HelloLua;
 			productName = HelloLua;
-			productReference = 1D6058910D05DD3D006BFB54 /* HelloLua.app */;
+			productReference = 1D6058910D05DD3D006BFB54 /* iWAgame.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -655,6 +754,31 @@
 				F2837A7015B9606900A5707B /* tolua_map.c in Sources */,
 				F2837A7115B9606900A5707B /* tolua_push.c in Sources */,
 				F2837A7215B9606900A5707B /* tolua_to.c in Sources */,
+				057ABC05168348AE00C2A4B6 /* iWA_Auth.c in Sources */,
+				057ABC06168348AE00C2A4B6 /* iWA_Basic.c in Sources */,
+				057ABC07168348AE00C2A4B6 /* iWA_Crypto.c in Sources */,
+				057ABC08168348AE00C2A4B6 /* iWA_Net.c in Sources */,
+				057ABC09168348AE00C2A4B6 /* iWA_World.c in Sources */,
+				057ABC0A168348AE00C2A4B6 /* ODSocket.cpp in Sources */,
+				057ABC25168348C800C2A4B6 /* bn_add.c in Sources */,
+				057ABC26168348C800C2A4B6 /* bn_asm.c in Sources */,
+				057ABC27168348C800C2A4B6 /* bn_ctx.c in Sources */,
+				057ABC28168348C800C2A4B6 /* bn_div.c in Sources */,
+				057ABC29168348C800C2A4B6 /* bn_exp.c in Sources */,
+				057ABC2A168348C800C2A4B6 /* bn_gcd.c in Sources */,
+				057ABC2B168348C800C2A4B6 /* bn_lib.c in Sources */,
+				057ABC2C168348C800C2A4B6 /* bn_mod.c in Sources */,
+				057ABC2D168348C800C2A4B6 /* bn_mont.c in Sources */,
+				057ABC2E168348C800C2A4B6 /* bn_mul.c in Sources */,
+				057ABC2F168348C800C2A4B6 /* bn_print.c in Sources */,
+				057ABC30168348C800C2A4B6 /* bn_rand.c in Sources */,
+				057ABC31168348C800C2A4B6 /* bn_recp.c in Sources */,
+				057ABC32168348C800C2A4B6 /* bn_shift.c in Sources */,
+				057ABC33168348C800C2A4B6 /* bn_sqr.c in Sources */,
+				057ABC34168348C800C2A4B6 /* bn_word.c in Sources */,
+				057ABC35168348C800C2A4B6 /* mem_clr.c in Sources */,
+				057ABC36168348C800C2A4B6 /* mem.c in Sources */,
+				057ABC37168348C800C2A4B6 /* sha1.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -699,6 +823,7 @@
 					"$(SRCROOT)/../../../external/lua/cocos2dx_support",
 					"$(SRCROOT)/../../../cocos2dx/platform/ios",
 					"$(SRCROOT)/../../../cocos2dx/include",
+					"$(SRCROOT)/../Classes",
 				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -711,7 +836,7 @@
 					"-ObjC",
 					"-all_load",
 				);
-				PRODUCT_NAME = HelloLua;
+				PRODUCT_NAME = iWAgame;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -748,6 +873,7 @@
 					"$(SRCROOT)/../../../external/lua/cocos2dx_support",
 					"$(SRCROOT)/../../../cocos2dx/platform/ios",
 					"$(SRCROOT)/../../../cocos2dx/include",
+					"$(SRCROOT)/../Classes",
 				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -760,7 +886,7 @@
 					"-ObjC",
 					"-all_load",
 				);
-				PRODUCT_NAME = HelloLua;
+				PRODUCT_NAME = iWAgame;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";

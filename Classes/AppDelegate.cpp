@@ -3,6 +3,7 @@
 #include "SimpleAudioEngine.h"
 #include "script_support/CCScriptSupport.h"
 #include "CCLuaEngine.h"
+#include "ODSocket.h"
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -20,6 +21,44 @@ AppDelegate::~AppDelegate()
     //CCScriptEngineManager::purgeSharedManager();
 }
 
+
+
+
+extern "C" void iWA_Mprint(void);
+
+extern "C" void iWA_Auth_InitAuthInfoBlock(void);
+extern "C" void iWA_Auth_PrintAuthInfoBlock(void);
+extern "C" void iWA_Auth_DeinitAuthInfoBlock(void);
+
+extern "C" char* iWA_Auth_GetPacketBuf();
+
+	
+extern "C" unsigned int iWA_Auth_WriteLogonChallengeClientPacket();
+extern "C" unsigned int iWA_Auth_ReadLogonChallengeServerPacket();
+extern "C" unsigned int iWA_Auth_WriteLogonProofClientPacket();
+extern "C" unsigned int iWA_Auth_ReadLogonProofBuild6005ServerPacket();
+extern "C" unsigned int iWA_Auth_WriteRealmListClientPacket();
+extern "C" unsigned int iWA_Auth_ReadRealmListClientPacket();
+
+extern "C" unsigned int iWA_Auth_CalculateClientSrpValue();
+
+extern "C" void iWA_Auth_TestSHA1(void);
+extern "C" void iWA_Auth_TestBn(void);
+
+extern "C" void iWA_World_InitSessionInfoBlock(void);
+extern "C" void iWA_World_DeinitSessionInfoBlock(void);
+extern "C" void iWA_World_PrintSessionInfoBlock(void);
+extern "C" void iWA_World_ReadWorldServerPacket(void);
+extern "C" unsigned int iWA_World_WriteCmsgAuthSessionPacket(void);
+extern "C" unsigned int iWA_World_WriteCmsgCharEnumPacket(void);
+extern "C" unsigned int iWA_World_WriteCmsgPlayerLoginPacket(void);
+extern "C" char* iWA_World_GetPacketBuf(void);
+
+//#define _SERVER_IP_    "127.0.0.1"
+//#define _SERVER_IP_    "192.168.10.105"
+#define _SERVER_IP_    "192.168.1.6" 
+
+
 bool AppDelegate::applicationDidFinishLaunching()
 {
     // initialize director
@@ -33,6 +72,108 @@ bool AppDelegate::applicationDidFinishLaunching()
 
     // set FPS. the default value is 1.0/60 if you don't call this
     pDirector->setAnimationInterval(1.0 / 60);
+
+
+iWA_Mprint();
+	iWA_Auth_TestBn();
+	
+iWA_Mprint();
+
+   // iWA_Auth_TestSHA1();
+
+iWA_Mprint();
+
+	iWA_Auth_InitAuthInfoBlock();
+	char *pkt = iWA_Auth_GetPacketBuf();
+	int size = iWA_Auth_WriteLogonChallengeClientPacket();
+
+iWA_Mprint();
+
+	ODSocket cSocket;
+	int ret;
+
+	cSocket.Init();
+	ret = cSocket.Create(AF_INET,SOCK_STREAM,0);
+	ret = cSocket.Connect(_SERVER_IP_,3724);
+	char recvBuf[1024] = "\0";
+	
+	ret = cSocket.Send(pkt, size, 0);
+	ret = cSocket.Recv(recvBuf, 256,0);
+
+	memcpy(pkt, recvBuf, ret);
+	iWA_Auth_ReadLogonChallengeServerPacket();
+	iWA_Auth_CalculateClientSrpValue();
+	size = iWA_Auth_WriteLogonProofClientPacket();
+
+	ret = cSocket.Send(pkt, size, 0);
+	ret = cSocket.Recv(recvBuf,256,0);
+
+	memcpy(pkt, recvBuf, ret);
+	iWA_Auth_ReadLogonProofBuild6005ServerPacket();
+	size = iWA_Auth_WriteRealmListClientPacket();
+
+	ret = cSocket.Send(pkt, size, 0);
+	ret = cSocket.Recv(recvBuf,256,0);
+
+	memcpy(pkt, recvBuf, ret);
+	iWA_Auth_ReadRealmListClientPacket();
+	
+	iWA_Auth_PrintAuthInfoBlock();
+
+
+	
+	//CCMessageBox(recvBuf,"recived data is:");
+	
+	cSocket.Close();
+
+#if 1
+	iWA_World_InitSessionInfoBlock();
+	// iWA_World_PrintSessionInfoBlock();
+
+	pkt = iWA_World_GetPacketBuf();
+
+	ret = cSocket.Create(AF_INET,SOCK_STREAM,0);
+	ret = cSocket.Connect(_SERVER_IP_,8085);
+
+	ret = cSocket.Recv(recvBuf,1024,0);
+	memcpy(pkt, recvBuf, ret);
+	iWA_World_ReadWorldServerPacket();
+	size = iWA_World_WriteCmsgAuthSessionPacket();
+
+	ret = cSocket.Send(pkt, size, 0);
+	ret = cSocket.Recv(recvBuf,1024,0);	
+	memcpy(pkt, recvBuf, ret);
+	iWA_World_ReadWorldServerPacket();
+	size = iWA_World_WriteCmsgCharEnumPacket();
+
+	ret = cSocket.Send(pkt, size, 0);
+	ret = cSocket.Recv(recvBuf,1024,0);	
+	memcpy(pkt, recvBuf, ret);
+	iWA_World_ReadWorldServerPacket();	
+	size = iWA_World_WriteCmsgPlayerLoginPacket();
+
+	ret = cSocket.Send(pkt, size, 0);
+	ret = cSocket.Recv(recvBuf,1024,0);	
+	memcpy(pkt, recvBuf, ret);
+	iWA_World_ReadWorldServerPacket();		
+
+
+
+
+	iWA_World_DeinitSessionInfoBlock();	
+#endif
+
+	iWA_Auth_DeinitAuthInfoBlock();
+
+
+	cSocket.Clean();
+
+
+
+iWA_Mprint();
+
+
+	return true;
 
     // register lua engine
     CCLuaEngine* pEngine = CCLuaEngine::defaultEngine();
