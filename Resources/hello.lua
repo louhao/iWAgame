@@ -17,7 +17,19 @@ local function main()
     end
 
     require "hello2"
-    cclog("result is " .. myadd(3, 5))
+    cclog("result is xxx" .. myadd(3, 5))
+
+
+    function hello(code,data)
+        cclog("get html status %d", code);
+        -- print(data);
+    end
+
+   LuaHttpClient:doGet("http://www.gonworld.com/map.rar",hello);
+    
+    CCLuaLog("runing in hello.lua");
+
+
 
     ---------------
 

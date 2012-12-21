@@ -4,6 +4,10 @@
 #include "script_support/CCScriptSupport.h"
 #include "CCLuaEngine.h"
 #include "ODSocket.h"
+#include "curl/curl.h"
+#include "network/httpclient2.h"
+#include "network/httpclienttest.h"
+#include "network/luahttpclient.h"
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -73,6 +77,7 @@ bool AppDelegate::applicationDidFinishLaunching()
     // set FPS. the default value is 1.0/60 if you don't call this
     pDirector->setAnimationInterval(1.0 / 60);
 
+#if 0
 
 iWA_Mprint();
 	iWA_Auth_TestBn();
@@ -175,9 +180,62 @@ iWA_Mprint();
 
 	return true;
 
+#endif
+
+
+#if 1   // test LuaHttpClient 
+    printf("hello lua init");
+    
+    LuaHttpClientTest();
+    return true;
+#endif
+    
+#if 0   // test HttpClientTest
+    
+    HttpClientTest *hctest = new HttpClientTest();
+    hctest->onMenuGetTestClicked(NULL);
+    return true;
+#endif
+
+#if 0  // test curl easy interface
+    {
+        CURL *curl;
+        CURLcode res;
+        char buffer[10];
+        
+        curl = curl_easy_init();
+        if (curl)
+        {
+            curl_easy_setopt(curl, CURLOPT_URL, "www.baidu.com");
+            res = curl_easy_perform(curl);
+            /* always cleanup */
+            curl_easy_cleanup(curl);
+            if (res == 0)
+            {
+                printf("0 response");
+            }
+            else
+            {
+                printf("code: %i",res);
+            }
+        } 
+        else 
+        {
+            printf("no curl");
+        } 
+    }
+    return true;
+#endif
+
+
     // register lua engine
     CCLuaEngine* pEngine = CCLuaEngine::defaultEngine();
     CCScriptEngineManager::sharedManager()->setScriptEngine(pEngine);
+
+    // added by louhao, reg httpclient 
+    lua_State* L = pEngine->getLuaState();
+    tolua_httpclient_open(L);
+
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID)
     CCString* pstrFileContent = CCString::createWithContentsOfFile("hello.lua");

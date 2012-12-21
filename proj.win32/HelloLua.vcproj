@@ -49,7 +49,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;..\Classes;&quot;$(SolutionDir)scripting\lua\cocos2dx_support&quot;;&quot;$(SolutionDir)scripting\lua\lua&quot;;&quot;$(SolutionDir)scripting\lua\tolua&quot;;&quot;$(SolutionDir)scripting\lua\src&quot;;&quot;$(SolutionDir)cocos2dx&quot;;&quot;$(SolutionDir)cocos2dx\include&quot;;&quot;$(SolutionDir)cocos2dx\kazmath\include&quot;;&quot;$(SolutionDir)cocos2dx\platform\win32&quot;;&quot;$(SolutionDir)cocos2dx\platform\third_party\win32\OGLES&quot;;&quot;$(SolutionDir)CocosDenshion\include&quot;"
+				AdditionalIncludeDirectories=".;..\Classes;&quot;$(SolutionDir)scripting\lua\cocos2dx_support&quot;;&quot;$(SolutionDir)scripting\lua\lua&quot;;&quot;$(SolutionDir)scripting\lua\tolua&quot;;&quot;$(SolutionDir)scripting\lua\src&quot;;&quot;$(SolutionDir)cocos2dx&quot;;&quot;$(SolutionDir)cocos2dx\include&quot;;&quot;$(SolutionDir)cocos2dx\kazmath\include&quot;;&quot;$(SolutionDir)cocos2dx\platform\win32&quot;;&quot;$(SolutionDir)cocos2dx\platform\third_party\win32\OGLES&quot;;&quot;$(SolutionDir)CocosDenshion\include&quot;;&quot;$(SolutionDir)cocos2dx\platform\third_party\win32&quot;;&quot;$(SolutionDir)extensions&quot;;&quot;$(SolutionDir)cocos2dx\platform\third_party\win32\pthread&quot;;..\Classes\network"
 				PreprocessorDefinitions="WIN32;_WINDOWS;STRICT;_DEBUG;COCOS2D_DEBUG=1;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -73,7 +73,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libcocos2d.lib libCocosDenshion.lib opengl32.lib glew32.lib liblua.lib"
+				AdditionalDependencies="libcocos2d.lib libCocosDenshion.lib opengl32.lib glew32.lib liblua.lib libcurl_imp.lib pthreadVCE2.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(OutDir)"
 				GenerateDebugInformation="true"
@@ -365,6 +365,42 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="network"
+				>
+				<File
+					RelativePath="..\Classes\network\HttpClient2.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\HttpClient2.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\HttpClientTest.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\HttpClientTest.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\HttpRequest2.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\HttpResponse2.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\LuaHttpClient.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Classes\network\LuaHttpClient.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="win32"
@@ -378,6 +414,10 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\..\..\cocos2dx\platform\third_party\win32\libraries\libcurl_imp.lib"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
