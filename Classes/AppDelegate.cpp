@@ -12,21 +12,6 @@
 USING_NS_CC;
 using namespace CocosDenshion;
 
-AppDelegate::AppDelegate()
-{
-    // fixed me
-    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_LEAK_CHECK_DF);
-}
-
-AppDelegate::~AppDelegate()
-{
-    // end simple audio engine here, or it may crashed on win32
-    SimpleAudioEngine::sharedEngine()->end();
-    //CCScriptEngineManager::purgeSharedManager();
-}
-
-
-
 
 extern "C" void iWA_Mprint(void);
 
@@ -35,8 +20,8 @@ extern "C" void iWA_Auth_PrintAuthInfoBlock(void);
 extern "C" void iWA_Auth_DeinitAuthInfoBlock(void);
 
 extern "C" char* iWA_Auth_GetPacketBuf();
-
-	
+extern "C" void iWA_Auth_SendPacket(void);
+extern "C" void iWA_Auth_ReceivePacket(void);
 extern "C" unsigned int iWA_Auth_WriteLogonChallengeClientPacket();
 extern "C" unsigned int iWA_Auth_ReadLogonChallengeServerPacket();
 extern "C" unsigned int iWA_Auth_WriteLogonProofClientPacket();
@@ -57,6 +42,48 @@ extern "C" unsigned int iWA_World_WriteCmsgAuthSessionPacket(void);
 extern "C" unsigned int iWA_World_WriteCmsgCharEnumPacket(void);
 extern "C" unsigned int iWA_World_WriteCmsgPlayerLoginPacket(void);
 extern "C" char* iWA_World_GetPacketBuf(void);
+extern "C" void iWA_World_ReceivePacket(void);
+
+
+class CCSocket : public CCObject
+{
+public:
+    CCSocket();
+
+    void check_socket_receive(float delta);
+
+};
+
+CCSocket::CCSocket()
+{
+    CCDirector::sharedDirector()->getScheduler()->scheduleSelector(schedule_selector(CCSocket::check_socket_receive), this, 0, false);
+}
+
+void CCSocket::check_socket_receive(float delta)
+{
+   //     CCLog("CCSocket::check_socket_receive() called");
+
+        iWA_Auth_ReceivePacket();
+         iWA_World_ReceivePacket();  
+}
+
+
+
+
+AppDelegate::AppDelegate()
+{
+    // fixed me
+    //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF|_CRTDBG_LEAK_CHECK_DF);
+}
+
+AppDelegate::~AppDelegate()
+{
+    // end simple audio engine here, or it may crashed on win32
+    SimpleAudioEngine::sharedEngine()->end();
+    //CCScriptEngineManager::purgeSharedManager();
+}
+
+
 
 //#define _SERVER_IP_    "127.0.0.1"
 //#define _SERVER_IP_    "192.168.10.105"
@@ -183,7 +210,7 @@ iWA_Mprint();
 #endif
 
 
-#if 1   // test LuaHttpClient 
+#if 0   // test LuaHttpClient 
     printf("hello lua init");
     
     LuaHttpClientTest();
@@ -227,6 +254,16 @@ iWA_Mprint();
     return true;
 #endif
 
+#if 1
+CCLog("set scheduler");
+CCSocket *soc = new CCSocket();
+
+iWA_Auth_InitAuthInfoBlock();
+iWA_Auth_WriteLogonChallengeClientPacket();
+iWA_Auth_SendPacket();
+
+return 1;
+#endif
 
     // register lua engine
     CCLuaEngine* pEngine = CCLuaEngine::defaultEngine();

@@ -29,7 +29,7 @@
 #include "ExtensionMacros.h"
 #include "HttpRequest2.h"
 
-NS_CC_EXT_BEGIN
+NS_CC_BEGIN
 
 /** 
  @brief defines the object which users will receive at onHttpCompleted(sender, HttpResponse) callback
@@ -164,6 +164,6 @@ protected:
     
 };
 
-NS_CC_EXT_END
+NS_CC_END
 
 #endif //__HTTP_RESPONSE_H__

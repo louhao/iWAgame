@@ -32,7 +32,7 @@
 #include "HttpRequest2.h"
 #include "HttpResponse2.h"
 
-NS_CC_EXT_BEGIN
+NS_CC_BEGIN
 
 /**
  * @addtogroup Network
@@ -53,6 +53,7 @@ public:
     static void destroyInstance();
 
     static void readHttpProgress(unsigned int *total, unsigned int *now);
+
         
     /**
      * Add a get request to task queue
@@ -115,6 +116,6 @@ private:
 // end of Network group
 /// @}
 
-NS_CC_EXT_END
+NS_CC_END
 
 #endif //__CCHTTPREQUEST_H__

@@ -28,7 +28,7 @@
 #include "cocos2d.h"
 #include "ExtensionMacros.h"
 
-NS_CC_EXT_BEGIN
+NS_CC_BEGIN
 
 /** 
  @brief defines the object which users must packed for CCHttpClient::send(HttpRequest*) method.
@@ -205,6 +205,6 @@ public:
     bool _saveToFile;   /// added by LouHao
 };
 
-NS_CC_EXT_END
+NS_CC_END
 
 #endif //__HTTP_REQUEST_H__

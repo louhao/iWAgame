@@ -5,6 +5,9 @@
 #include <memory.h>
 #include <string.h>
 
+#include <pthread.h>
+#include <semaphore.h>
+
 #include "bn/bn.h"
 #include "bn/sha1.h"
 
@@ -64,6 +67,8 @@ extern void iWA_Crypto_Sha1HashBigNumbers(SHA1Context *sha_ctx, BIGNUM *result, 
 extern void iWA_Auth_InitAuthInfoBlock(void);
 extern void iWA_Auth_DeinitAuthInfoBlock(void);
 extern void iWA_Auth_PrintAuthInfoBlock(void);
+extern void iWA_Auth_SendPacket(void);
+extern void iWA_Auth_ReceivePacket(void);
 extern iWAuint32 iWA_Auth_WriteLogonChallengeClientPacket(void);   /* return : packet size */
 extern iWAbool iWA_Auth_ReadLogonChallengeServerPacket(void);
 extern iWAuint32 iWA_Auth_WriteLogonProofClientPacket(void);          /* return : packet size */
@@ -71,18 +76,30 @@ extern iWAbool iWA_Auth_ReadLogonProofBuild6005ServerPacket(void);
 extern iWAuint32 iWA_Auth_WriteRealmListClientPacket(void);            /* return : packet size */
 extern iWAbool iWA_Auth_ReadRealmListClientPacket(void);
 extern iWAbool iWA_Auth_CalculateClientSrpValue(void);
-extern iWAuint8* iWA_Auth_GetPacketBuf();
+//extern iWAuint8* iWA_Auth_GetPacketBuf();
 extern iWAuint32 iWA_Auth_GetClientBuild();
 extern iWAuint8* iWA_Auth_GetUsername();
 extern BIGNUM* iWA_Auth_GetK();
 
 
-extern void iWA_World_InitSeesionInfoBlock(void);
-extern void iWA_World_DeinitSeesionInfoBlock(void);
+extern void iWA_World_InitSessionInfoBlock(void);
+extern void iWA_World_DeinitSessionInfoBlock(void);
 extern void iWA_World_PrintSessionInfoBlock(void);
-extern void iWA_World_ReadWorldServerPacket(void);
+//extern void iWA_World_ReadWorldServerPacket(void);
 extern iWAuint32 iWA_World_WriteCmsgAuthSessionPacket(void);
 extern iWAuint32 iWA_World_WriteCmsgCharEnumPacket(void);
-extern iWAuint8* iWA_World_GetPacketBuf(void);
+extern iWAuint32 iWA_World_WriteCmsgPlayerLoginPacket(void);
+//extern iWAuint8* iWA_World_GetPacketBuf(void);
+extern void iWA_World_SendPacket(void);
+extern void iWA_World_ReceivePacket(void);
+
+
+extern iWAbool iWA_Socket_InitSession(iWAuint8 *ip, iWAuint16 port, iWAuint32 send_buf_size, iWAuint32 recv_buf_size, void *func_split, iWAuint32 split_size, void *func_decrypt);
+extern void iWA_Socket_DeinitSession(void);
+extern iWAbool iWA_Socket_SendPacket(iWAuint8 *data, iWAuint32 len);
+extern iWAbool iWA_Socket_ReceivePacket(iWAuint8 *data, iWAuint32 *len);
+extern iWAbool iWA_Socket_ReceivePacket2(iWAuint8 **data, iWAuint32 *len, iWAuint32 **valid);
+
+
 
 

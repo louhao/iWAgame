@@ -148,10 +148,12 @@ typedef struct
 
 typedef struct
 {
-    iWAuint32 client_build;
+    iWAuint16 valid;        /* Auth session valid */
+    iWAuint16 client_build;
     iWAuint8 username[iWAmacro_AUTH_INFO_USERNAME_MAXIUM];
     iWAuint8 password[iWAmacro_AUTH_INFO_PASSWORD_MAXIUM];
     iWAuint8 packet[iWAmacro_AUTH_INFO_PACKET_MAXIUM];    
+    iWAuint32 packet_len;
     BIGNUM B, g, N, s, M2;  /* received from server */
     BIGNUM a, A, S, K, M1;  /* generate at client */
     iWAuint16 realms_num;   
@@ -159,12 +161,31 @@ typedef struct
 }iWAstruct_Auth_AuthInfoBlock;
 
 
-static iWAstruct_Auth_AuthInfoBlock auth_info_block;
+static iWAstruct_Auth_AuthInfoBlock auth_info_block = {0};
 
 
 
+static iWAuint32 split_auth_packet(iWAuint8 *pkt, iWAuint32 len)
+{
+    iWAuint32 size;
 
+    switch(pkt[0])
+    {
+        case iWAenum_AUTH_CMD_AUTH_LOGON_CHALLENGE:
+            size = sizeof(iWAstruct_Auth_LogonChallengeServerPacket);
+            break;
+        case iWAenum_AUTH_CMD_AUTH_LOGON_PROOF:
+            size = sizeof(iWAstruct_Auth_LogonProofBuild6005ServerPacket);
+            break;
+        case iWAenum_AUTH_CMD_REALM_LIST:
+            size = iWA_Net_ReadPacketUint16(pkt+1) + 3;
+            break;
+        default:
+            size = 0;
+    }
 
+    return size;
+}
 
 
 void iWA_Auth_InitAuthInfoBlock(void)
@@ -187,11 +208,22 @@ void iWA_Auth_InitAuthInfoBlock(void)
     auth_info_block.client_build = 5875;
     iWA_Std_strcpy(auth_info_block.username, "LOUHAO");
     iWA_Std_strcpy(auth_info_block.password, "LOUHAO");
+
+    auth_info_block.valid = 1;
+
+#define _SERVER_IP_    "127.0.0.1"
+//#define _SERVER_IP_    "192.168.10.105"
+//#define _SERVER_IP_    "192.168.1.6" 
+
+
+    iWA_Socket_InitSession(_SERVER_IP_, 3724, 1024, 1024, (void*)split_auth_packet, 3, NULL);
 }
 
 void iWA_Auth_DeinitAuthInfoBlock()
 {
     iWA_Log("iWA_Auth_DeinitAuthInfoBlock()");
+
+    auth_info_block.valid = 0;
 
     BN_free(&auth_info_block.B);
     BN_free(&auth_info_block.g);
@@ -203,6 +235,55 @@ void iWA_Auth_DeinitAuthInfoBlock()
     BN_free(&auth_info_block.S);
     BN_free(&auth_info_block.K);
     BN_free(&auth_info_block.M1);
+}
+
+void iWA_Auth_SendPacket(void)
+{
+    iWA_Log("iWA_Auth_SendPacket()");
+
+    if(!auth_info_block.valid)     return;
+
+    iWA_Socket_SendPacket(auth_info_block.packet, auth_info_block.packet_len);    
+}
+
+void iWA_Auth_ReceivePacket(void)
+{
+    //iWA_Log("iWA_Auth_ReceivePacket()");
+
+    if(!auth_info_block.valid)     return;
+
+    if(iWA_Socket_ReceivePacket(auth_info_block.packet, &auth_info_block.packet_len))
+    {
+        iWA_Log("iWA_Auth_ReceivePacket() get new packet");
+    
+        switch(auth_info_block.packet[0])
+        {
+            case iWAenum_AUTH_CMD_AUTH_LOGON_CHALLENGE:
+                if(iWA_Auth_ReadLogonChallengeServerPacket())
+                {
+                    iWA_Auth_CalculateClientSrpValue();
+                    iWA_Auth_WriteLogonProofClientPacket();
+                    iWA_Auth_SendPacket();
+                }    
+                break;
+            case iWAenum_AUTH_CMD_AUTH_LOGON_PROOF:
+                if(iWA_Auth_ReadLogonProofBuild6005ServerPacket())
+                {
+                    iWA_Auth_WriteRealmListClientPacket();
+                    iWA_Auth_SendPacket();
+                }
+                break;
+            case iWAenum_AUTH_CMD_REALM_LIST:
+                iWA_Auth_ReadRealmListClientPacket();
+                iWA_Auth_PrintAuthInfoBlock();
+                //iWA_Auth_DeinitAuthInfoBlock();
+
+                auth_info_block.valid = 0;
+                iWA_Socket_DeinitSession();
+                iWA_World_InitSessionInfoBlock();
+                break;        
+        }
+    }
 }
 
 void iWA_Auth_PrintAuthInfoBlock()
@@ -279,6 +360,8 @@ iWAuint32 iWA_Auth_WriteLogonChallengeClientPacket()
     
     iWA_Std_strcpy(packet->username, auth_info_block.username);
 
+    auth_info_block.packet_len = packet_size + 4;
+
     return (packet_size + 4);
 }
 
@@ -319,6 +402,8 @@ iWAuint32 iWA_Auth_WriteLogonProofClientPacket()
     iWA_Net_WritePacketBigNumber(packet->A, &(auth_info_block.A));
     iWA_Net_WritePacketBigNumber(packet->M1, &(auth_info_block.M1));    
 
+    auth_info_block.packet_len = sizeof(iWAstruct_Auth_LogonProofClientPacket);
+
     return sizeof(iWAstruct_Auth_LogonProofClientPacket);
 }
 
@@ -351,6 +436,8 @@ iWAuint32 iWA_Auth_WriteRealmListClientPacket()
     iWA_Std_memset((void*)packet, 0, sizeof(iWAstruct_Auth_RealmListClientPacket));
 
     packet->cmd = iWAenum_AUTH_CMD_REALM_LIST;
+
+    auth_info_block.packet_len = sizeof(iWAstruct_Auth_RealmListClientPacket);
     
     return sizeof(iWAstruct_Auth_RealmListClientPacket);
 }
@@ -410,9 +497,6 @@ iWAbool iWA_Auth_ReadRealmListClientPacket()
     return 1;
 
 }
-
-
-
 
 iWAbool iWA_Auth_CalculateClientSrpValue()
 {
@@ -530,11 +614,12 @@ end:
     return ret;
 }
 
-
+#if 0
 iWAuint8* iWA_Auth_GetPacketBuf()
 {
     return  auth_info_block.packet;
 }
+#endif
 
 iWAuint32 iWA_Auth_GetClientBuild()
 {

@@ -222,6 +222,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Classes\iWA_Socket.c"
+				>
+			</File>
+			<File
 				RelativePath="..\Classes\iWA_World.c"
 				>
 			</File>

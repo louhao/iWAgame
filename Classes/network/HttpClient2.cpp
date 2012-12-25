@@ -33,7 +33,7 @@
 
 #include "curl/curl.h"
 
-NS_CC_EXT_BEGIN
+NS_CC_BEGIN
 
 static pthread_t        s_networkThread;
 static pthread_mutex_t  s_requestQueueMutex;
@@ -600,6 +600,10 @@ void CCHttpClient::dispatchResponseCallbacks(float delta)
     
 }
 
-NS_CC_EXT_END
+
+
+
+
+NS_CC_END
 
 

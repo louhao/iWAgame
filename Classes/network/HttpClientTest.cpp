@@ -3,7 +3,7 @@
 #include <string>
 
 USING_NS_CC;
-USING_NS_CC_EXT;
+//USING_NS_CC_EXT;
 
 HttpClientTest::HttpClientTest() 
 : m_labelStatusCode(NULL)
