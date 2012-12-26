@@ -14,6 +14,7 @@ LOCAL_SRC_FILES := hellolua/main.cpp \
                    ../../Classes/iWA_Crypto.c \
                    ../../Classes/iWA_Auth.c \
                    ../../Classes/iWA_World.c \
+                   ../../Classes/iWA_Socket.c \
                    ../../Classes/bn/sha1.c \
                    ../../Classes/bn/bn_lib.c \
                    ../../Classes/bn/bn_add.c \
@@ -38,7 +39,8 @@ LOCAL_SRC_FILES := hellolua/main.cpp \
                    ../../../../scripting/lua/cocos2dx_support/LuaCocos2d.cpp \
                    ../../../../scripting/lua/cocos2dx_support/tolua_fix.c
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../Classes
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../Classes \
+                    $(LOCAL_PATH)/../../../../cocos2dx/platform/third_party/android/prebuilt/libcurl/include
 
 LOCAL_WHOLE_STATIC_LIBRARIES := cocos2dx_static
 LOCAL_WHOLE_STATIC_LIBRARIES += cocosdenshion_static

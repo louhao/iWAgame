@@ -1075,7 +1075,7 @@ static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAu
 
     if(packet == NULL || size == NULL || cmd == NULL)     return 0;
 
-    iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+   // iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
     if(!seesion_info_block.do_crypto)
     {
@@ -1096,7 +1096,7 @@ static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAu
         packet[t] = x;
     
     }
-    iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+  //  iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
     *size = (((iWAuint16)packet[0] << 8) |(iWAuint16)packet[1]) - 2;
     *cmd = iWA_Net_ReadPacketUint16(packet+2);
@@ -1136,7 +1136,7 @@ static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint
     packet[1] = (iWAuint8)(size+4);    
     iWA_Net_WritePacketUint32(packet+2, cmd);
 
-    iWA_Dump(packet, iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE);
+//    iWA_Dump(packet, iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE);
 
     if(seesion_info_block.do_crypto)
     {
@@ -1151,7 +1151,7 @@ static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint
         }
     }
 
-    iWA_Dump(packet, iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE);
+  //  iWA_Dump(packet, iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE);
 }
 
 
@@ -1166,7 +1166,7 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
 
     if(pkt == NULL || len < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE)   return 0;
 
-    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+//    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
     if(!seesion_info_block.do_crypto)
     {
@@ -1191,7 +1191,7 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
     
     }
     
-    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+//    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
     size = (((iWAuint16)pkt[0] << 8) |(iWAuint16)pkt[1]) - 2;
 
@@ -1207,7 +1207,7 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len)
 
     if(pkt == NULL || len < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE)   return;
 
-    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+//    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
     if(seesion_info_block.do_crypto)
     {
@@ -1221,7 +1221,7 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len)
         }
     }
     
-    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+//    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 }
 
 void iWA_World_InitSessionInfoBlock()

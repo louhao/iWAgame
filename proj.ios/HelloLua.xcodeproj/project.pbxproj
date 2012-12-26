@@ -32,6 +32,7 @@
 		057ABC35168348C800C2A4B6 /* mem_clr.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC21168348C800C2A4B6 /* mem_clr.c */; };
 		057ABC36168348C800C2A4B6 /* mem.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC22168348C800C2A4B6 /* mem.c */; };
 		057ABC37168348C800C2A4B6 /* sha1.c in Sources */ = {isa = PBXBuildFile; fileRef = 057ABC23168348C800C2A4B6 /* sha1.c */; };
+		05B4B654168AA9840072F75D /* iWA_Socket.c in Sources */ = {isa = PBXBuildFile; fileRef = 05B4B653168AA9840072F75D /* iWA_Socket.c */; };
 		15426A3615B571D700712A7F /* libcocos2dx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 15426A3315B571B300712A7F /* libcocos2dx.a */; };
 		15426A5915B5722100712A7F /* CDAudioManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 15426A4315B5722100712A7F /* CDAudioManager.m */; };
 		15426A5A15B5722100712A7F /* CDOpenALSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = 15426A4615B5722100712A7F /* CDOpenALSupport.m */; };
@@ -164,6 +165,7 @@
 		057ABC22168348C800C2A4B6 /* mem.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = mem.c; path = ../Classes/bn/mem.c; sourceTree = "<group>"; };
 		057ABC23168348C800C2A4B6 /* sha1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sha1.c; path = ../Classes/bn/sha1.c; sourceTree = "<group>"; };
 		057ABC24168348C800C2A4B6 /* sha1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sha1.h; path = ../Classes/bn/sha1.h; sourceTree = "<group>"; };
+		05B4B653168AA9840072F75D /* iWA_Socket.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = iWA_Socket.c; path = ../Classes/iWA_Socket.c; sourceTree = "<group>"; };
 		15426A2B15B571B300712A7F /* cocos2dx.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = cocos2dx.xcodeproj; path = ../../../cocos2dx/proj.ios/cocos2dx.xcodeproj; sourceTree = "<group>"; };
 		15426A3F15B5722100712A7F /* Export.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Export.h; sourceTree = "<group>"; };
 		15426A4015B5722100712A7F /* SimpleAudioEngine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimpleAudioEngine.h; sourceTree = "<group>"; };
@@ -468,6 +470,7 @@
 				057ABC0B168348B200C2A4B6 /* bignumber */,
 				057ABBFD168348AE00C2A4B6 /* iWA_Auth.c */,
 				057ABBFE168348AE00C2A4B6 /* iWA_Basic.c */,
+				05B4B653168AA9840072F75D /* iWA_Socket.c */,
 				057ABBFF168348AE00C2A4B6 /* iWA_Crypto.c */,
 				057ABC00168348AE00C2A4B6 /* iWA_Net.c */,
 				057ABC01168348AE00C2A4B6 /* iWA_World.c */,
@@ -779,6 +782,7 @@
 				057ABC35168348C800C2A4B6 /* mem_clr.c in Sources */,
 				057ABC36168348C800C2A4B6 /* mem.c in Sources */,
 				057ABC37168348C800C2A4B6 /* sha1.c in Sources */,
+				05B4B654168AA9840072F75D /* iWA_Socket.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -824,6 +828,7 @@
 					"$(SRCROOT)/../../../cocos2dx/platform/ios",
 					"$(SRCROOT)/../../../cocos2dx/include",
 					"$(SRCROOT)/../Classes",
+					"$(SRCROOT)/../../../cocos2dx/platform/third_party/ios",
 				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
@@ -874,6 +879,7 @@
 					"$(SRCROOT)/../../../cocos2dx/platform/ios",
 					"$(SRCROOT)/../../../cocos2dx/include",
 					"$(SRCROOT)/../Classes",
+					"$(SRCROOT)/../../../cocos2dx/platform/third_party/ios",
 				);
 				INFOPLIST_FILE = Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 5.0;

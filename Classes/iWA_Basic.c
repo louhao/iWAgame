@@ -13,9 +13,12 @@ void iWA_Log(const iWAint8* pszFormat, ...)
     va_start(args, pszFormat);        
     vsnprintf(buf, iWA_LOG_BUF_LENGTH, pszFormat, args);
     va_end(args);
-    
+
+#ifndef ANDROID    
     fprintf(stderr, "[iAW]  %s\n",  buf);
-//    __android_log_print(3, "iWA debug info",  buf);
+#else
+    __android_log_print(3, "iWA debug info",  buf);
+#endif  
 }
 
 void iWA_Dump(iWAuint8 *p, iWAint32 len)

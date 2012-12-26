@@ -13,7 +13,7 @@
 
 //#define iWAmacro_SOCKET_USE_NAMED_SEMAPHORE     1       /* on iOS */
 #define iWAmacro_SOCKET_USE_NAMED_SEMAPHORE       0
-#define iWAmacro_SOCKET_RECV_TIMEOUT                 (1000)             /* 1s */
+#define iWAmacro_SOCKET_RECV_TIMEOUT                 (1)             /* 1s */
 #define iWAmacro_SOCKET_SEND_SEGMENT_SIZE        (1024)
 #define iWAmacro_SOCKET_SPLIT_HEADER_SIZE_MIN      (4)
 
@@ -140,12 +140,17 @@ static iWAbool read_from_recv_buf(iWAuint8 *data, iWAuint32 len)
 static void* session_thread(void *data)
 {    
     iWAint32 ret, sock;
-    iWAint32 timeout = iWAmacro_SOCKET_RECV_TIMEOUT;
     struct sockaddr_in addr;
     iWAstruct_Socket_PacketHeader *pkt, *pkt_pro;
     iWAint32 send_partI_len,  send_partII_len, send_len;
     iWAint32 recv_partI_size, recv_partII_size;
     iWAuint8 *split_header;
+
+#ifdef WIN32
+    iWAint32 timeout = iWAmacro_SOCKET_RECV_TIMEOUT*1000;
+#else
+    struct timeval timeout={iWAmacro_SOCKET_RECV_TIMEOUT, 0};   
+#endif
 
 #ifdef WIN32
     WSADATA wsa;
@@ -155,29 +160,46 @@ static void* session_thread(void *data)
     if (ret != 0)       return 0;
 #endif
 
+    iWA_Log("iWA_Socket.c session_thread start");
+
     /* create socket */
     sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1)     return 0;
-
+    if (sock == -1)     
+    {
+        iWA_Log("socket create fail");
+        return 0;
+    }
+    
     /* set recv timeout */
+#ifdef WIN32
     ret = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (iWAint8*)&timeout, sizeof(iWAint32));
-    if(ret == -1)   return 0;
+#else
+    ret = setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+#endif
+    if(ret == -1)    
+    {
+        iWA_Log("setsockopt fail");
+        return 0;
+    }
 
     /* connect server */
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(session_info_block.ip);
     addr.sin_port = htons(session_info_block.port);
     ret = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
-    if(ret == -1)   return 0;
+    if(ret == -1)  
+    {
+        iWA_Log("socket connect fail");
+        return 0;
+    }
 
     /* split header buf */
     split_header = iWA_Malloc(session_info_block.split_header_size);
     if(split_header == NULL)    return 0;
 
-    while(1)
+    while(session_info_block.valid)
     {
-        pthread_testcancel();
-
+    //    pthread_testcancel();
     
         /* write packet in send queue to send buf */
         pthread_mutex_lock(&mutex_send_queue);
@@ -427,7 +449,8 @@ void iWA_Socket_DeinitSession(void)
 
     session_info_block.valid = 0;
 
-    pthread_cancel(session_info_block.session_thread);
+    //pthread_cancel(session_info_block.session_thread);
+  
     pthread_join(session_info_block.session_thread, &ret_val);
     
     if(session_info_block.send_buf != NULL)     iWA_Free(session_info_block.send_buf);
