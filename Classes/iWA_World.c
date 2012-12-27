@@ -1239,10 +1239,6 @@ void iWA_World_InitSessionInfoBlock()
 
     seesion_info_block.valid = 1;
 
-#define _SERVER_IP_    "127.0.0.1"
-//#define _SERVER_IP_    "192.168.10.105"
-//#define _SERVER_IP_    "192.168.1.6" 
-
     iWA_Socket_InitSession(_SERVER_IP_, 8085, 1024, 1024, (void*)split_world_packet, 4, (void*)decrypt_world_packet);
 }
 

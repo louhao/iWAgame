@@ -27,7 +27,7 @@
 #define __CCHTTPREQUEST_H__
 
 #include "cocos2d.h"
-#include "ExtensionMacros.h"
+//#include "ExtensionMacros.h"
 
 #include "HttpRequest2.h"
 #include "HttpResponse2.h"

@@ -11,17 +11,10 @@
 #endif
 
 
-//#define iWAmacro_SOCKET_USE_NAMED_SEMAPHORE     1       /* on iOS */
-#define iWAmacro_SOCKET_USE_NAMED_SEMAPHORE       0
 #define iWAmacro_SOCKET_RECV_TIMEOUT                 (1)             /* 1s */
 #define iWAmacro_SOCKET_SEND_SEGMENT_SIZE        (1024)
 #define iWAmacro_SOCKET_SPLIT_HEADER_SIZE_MIN      (4)
 
-#if iWAmacro_SOCKET_USE_NAMED_SEMAPHORE
-#define CC_ASYNC_HTTPREQUEST_SEMAPHORE "ccHttpAsync"
-#else
-static sem_t s_sem;
-#endif
 
 
 typedef iWAuint32 (*iWApfunc_Socket_SplitPacket)(iWAuint8*, iWAuint32);

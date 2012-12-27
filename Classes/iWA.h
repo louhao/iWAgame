@@ -1,4 +1,7 @@
 
+#ifndef __iWA_H__
+#define __iWA_H__
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -11,8 +14,10 @@
 #include "bn/bn.h"
 #include "bn/sha1.h"
 
-
-
+//#define _iWA_CLIENT_              1
+#define _SERVER_IP_    "127.0.0.1"
+//#define _SERVER_IP_    "192.168.10.107"
+//#define _SERVER_IP_    "192.168.1.6" 
 
 
 
@@ -37,6 +42,48 @@ typedef unsigned int       iWAbool;
 #define iWA_Std_atoi          atoi 
 
 
+enum
+{
+    iWAenum_AUTH_MSG_AUTH_OK                                         = 0x00,
+    iWAenum_AUTH_MSG_AUTH_CONNECT_ERROR                   = 0x01,
+    iWAenum_AUTH_MSG_AUTH_INVALID_USERNAME                = 0x02,
+    iWAenum_AUTH_MSG_AUTH_INVALID_PASSWORD              = 0x03,
+    iWAenum_AUTH_MSG_AUTH_SERVER_LIST                         = 0x04,
+
+    iWAenum_AUTH_MSG_REG_OK                                          = 0x10,
+    iWAenum_AUTH_MSG_REG_CONNECT_ERROR                     = 0x11,    
+    iWAenum_AUTH_MSG_REG_USERNAME_EXIST                    = 0x12,    
+};
+
+enum
+{
+    iWAenum_AUTH_SERVER_STATUS_NEW,
+    iWAenum_AUTH_SERVER_STATUS_HOT,
+    iWAenum_AUTH_SERVER_STATUS_MAINTAIN,
+};
+
+#define iWAmacro_AUTH_SERVER_NAME_SIZE          (32)
+#define iWAmacro_AUTH_SERVER_ADDRESS_SIZE    (20)
+#define iWAmacro_AUTH_SERVER_HIT_SIZE             (32)
+
+#define iWAmacro_WORLD_CHARACTER_NAME_SIZE     (32)
+#define iWAmacro_WORLD_CHARACTER_RACE_SIZE     (20)
+#define iWAmacro_WORLD_CHARACTER_NATION_SIZE   (20)
+
+typedef struct
+{
+    iWAuint8     region;
+    iWAuint8     status;
+    iWAuint8     name[iWAmacro_AUTH_SERVER_NAME_SIZE];
+    iWAuint8     hit[iWAmacro_AUTH_SERVER_HIT_SIZE];
+    iWAuint8     address[iWAmacro_AUTH_SERVER_ADDRESS_SIZE];
+    iWAuint16   port;
+    iWAuint16   character_num;
+    iWAuint16   character_class;    
+    iWAuint8     character_name[iWAmacro_WORLD_CHARACTER_NAME_SIZE];
+    iWAuint8     character_race[iWAmacro_WORLD_CHARACTER_RACE_SIZE];
+    iWAuint8     character_nation[iWAmacro_WORLD_CHARACTER_NATION_SIZE];
+}iWAstruct_Auth_Server;
 
 
 extern void iWA_Log(const iWAint8 *pszFormat, ...);
@@ -64,23 +111,14 @@ extern void iWA_Crypto_Sha1InputUint32(SHA1Context *sha_ctx, iWAuint32 i);
 extern void iWA_Crypto_Sha1HashBigNumbers(SHA1Context *sha_ctx, BIGNUM *result, BIGNUM *bn0, ...);
 
 
-extern void iWA_Auth_InitAuthInfoBlock(void);
-extern void iWA_Auth_DeinitAuthInfoBlock(void);
-extern void iWA_Auth_PrintAuthInfoBlock(void);
-extern void iWA_Auth_SendPacket(void);
-extern void iWA_Auth_ReceivePacket(void);
-extern iWAuint32 iWA_Auth_WriteLogonChallengeClientPacket(void);   /* return : packet size */
-extern iWAbool iWA_Auth_ReadLogonChallengeServerPacket(void);
-extern iWAuint32 iWA_Auth_WriteLogonProofClientPacket(void);          /* return : packet size */
-extern iWAbool iWA_Auth_ReadLogonProofBuild6005ServerPacket(void);
-extern iWAuint32 iWA_Auth_WriteRealmListClientPacket(void);            /* return : packet size */
-extern iWAbool iWA_Auth_ReadRealmListClientPacket(void);
-extern iWAbool iWA_Auth_CalculateClientSrpValue(void);
-//extern iWAuint8* iWA_Auth_GetPacketBuf();
-extern iWAuint32 iWA_Auth_GetClientBuild();
-extern iWAuint8* iWA_Auth_GetUsername();
-extern BIGNUM* iWA_Auth_GetK();
-
+extern void iWA_Auth_Init(void);
+extern void iWA_Auth_Deinit(void);
+extern iWAuint32 iWA_Auth_GetClientBuild(void);
+extern iWAuint8* iWA_Auth_GetUsername(void);
+extern BIGNUM* iWA_Auth_GetK(void);
+extern void iWA_Auth_DoReceive(void);
+extern iWAbool iWA_Auth_DoAuth(iWAuint8 *server, iWAuint16 port, iWAuint8 *username, iWAuint8 *password, void *msg_cb);
+extern iWAbool iWA_Auth_DoReg(iWAuint8 *server, iWAuint16 port, iWAuint8 *username, iWAuint8 *password, void *msg_cb);
 
 extern void iWA_World_InitSessionInfoBlock(void);
 extern void iWA_World_DeinitSessionInfoBlock(void);
@@ -101,5 +139,5 @@ extern iWAbool iWA_Socket_ReceivePacket(iWAuint8 *data, iWAuint32 *len);
 extern iWAbool iWA_Socket_ReceivePacket2(iWAuint8 **data, iWAuint32 *len, iWAuint32 **valid);
 
 
-
+#endif         /* __iWA_H__ */
 

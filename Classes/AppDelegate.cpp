@@ -14,25 +14,11 @@ using namespace CocosDenshion;
 
 
 extern "C" void iWA_Mprint(void);
+extern "C" void iWA_Auth_DoReceive(void);
+extern "C" void iWA_Auth_Init(void);
+extern "C" int iWA_Auth_DoAuth(char *server, short port, char *username, char *password);
+extern "C" int iWA_Auth_DoAuthSample(void);
 
-extern "C" void iWA_Auth_InitAuthInfoBlock(void);
-extern "C" void iWA_Auth_PrintAuthInfoBlock(void);
-extern "C" void iWA_Auth_DeinitAuthInfoBlock(void);
-
-extern "C" char* iWA_Auth_GetPacketBuf();
-extern "C" void iWA_Auth_SendPacket(void);
-extern "C" void iWA_Auth_ReceivePacket(void);
-extern "C" unsigned int iWA_Auth_WriteLogonChallengeClientPacket();
-extern "C" unsigned int iWA_Auth_ReadLogonChallengeServerPacket();
-extern "C" unsigned int iWA_Auth_WriteLogonProofClientPacket();
-extern "C" unsigned int iWA_Auth_ReadLogonProofBuild6005ServerPacket();
-extern "C" unsigned int iWA_Auth_WriteRealmListClientPacket();
-extern "C" unsigned int iWA_Auth_ReadRealmListClientPacket();
-
-extern "C" unsigned int iWA_Auth_CalculateClientSrpValue();
-
-extern "C" void iWA_Auth_TestSHA1(void);
-extern "C" void iWA_Auth_TestBn(void);
 
 extern "C" void iWA_World_InitSessionInfoBlock(void);
 extern "C" void iWA_World_DeinitSessionInfoBlock(void);
@@ -63,7 +49,7 @@ void CCSocket::check_socket_receive(float delta)
 {
    //     CCLog("CCSocket::check_socket_receive() called");
 
-        iWA_Auth_ReceivePacket();
+        iWA_Auth_DoReceive();
          iWA_World_ReceivePacket();  
 }
 
@@ -85,9 +71,6 @@ AppDelegate::~AppDelegate()
 
 
 
-//#define _SERVER_IP_    "127.0.0.1"
-//#define _SERVER_IP_    "192.168.10.105"
-#define _SERVER_IP_    "192.168.1.6" 
 
 
 bool AppDelegate::applicationDidFinishLaunching()
@@ -103,6 +86,10 @@ bool AppDelegate::applicationDidFinishLaunching()
 
     // set FPS. the default value is 1.0/60 if you don't call this
     pDirector->setAnimationInterval(1.0 / 60);
+
+
+
+
 
 #if 0
 
@@ -210,57 +197,15 @@ iWA_Mprint();
 #endif
 
 
-#if 0   // test LuaHttpClient 
-    printf("hello lua init");
     
-    LuaHttpClientTest();
-    return true;
-#endif
-    
-#if 0   // test HttpClientTest
-    
-    HttpClientTest *hctest = new HttpClientTest();
-    hctest->onMenuGetTestClicked(NULL);
-    return true;
-#endif
 
-#if 0  // test curl easy interface
-    {
-        CURL *curl;
-        CURLcode res;
-        char buffer[10];
-        
-        curl = curl_easy_init();
-        if (curl)
-        {
-            curl_easy_setopt(curl, CURLOPT_URL, "www.baidu.com");
-            res = curl_easy_perform(curl);
-            /* always cleanup */
-            curl_easy_cleanup(curl);
-            if (res == 0)
-            {
-                printf("0 response");
-            }
-            else
-            {
-                printf("code: %i",res);
-            }
-        } 
-        else 
-        {
-            printf("no curl");
-        } 
-    }
-    return true;
-#endif
 
 #if 1
 CCLog("set scheduler");
 CCSocket *soc = new CCSocket();
 
-iWA_Auth_InitAuthInfoBlock();
-iWA_Auth_WriteLogonChallengeClientPacket();
-iWA_Auth_SendPacket();
+iWA_Auth_Init();
+iWA_Auth_DoAuthSample();
 
 return 1;
 #endif
