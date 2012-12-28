@@ -3,7 +3,6 @@
 #include "SimpleAudioEngine.h"
 #include "script_support/CCScriptSupport.h"
 #include "CCLuaEngine.h"
-#include "ODSocket.h"
 #include "curl/curl.h"
 #include "network/httpclient2.h"
 #include "network/httpclienttest.h"
@@ -16,19 +15,11 @@ using namespace CocosDenshion;
 extern "C" void iWA_Mprint(void);
 extern "C" void iWA_Auth_DoReceive(void);
 extern "C" void iWA_Auth_Init(void);
-extern "C" int iWA_Auth_DoAuth(char *server, short port, char *username, char *password);
+extern "C" int iWA_Auth_DoAuth(char *server, short port, char *username, char *password, void *cb);
+extern "C" int iWA_Auth_DoReg(char *server, short port, char *username, char *password, void *cb);
 extern "C" int iWA_Auth_DoAuthSample(void);
+extern "C" int iWA_Auth_DoRegSample(void);
 
-
-extern "C" void iWA_World_InitSessionInfoBlock(void);
-extern "C" void iWA_World_DeinitSessionInfoBlock(void);
-extern "C" void iWA_World_PrintSessionInfoBlock(void);
-extern "C" void iWA_World_ReadWorldServerPacket(void);
-extern "C" unsigned int iWA_World_WriteCmsgAuthSessionPacket(void);
-extern "C" unsigned int iWA_World_WriteCmsgCharEnumPacket(void);
-extern "C" unsigned int iWA_World_WriteCmsgPlayerLoginPacket(void);
-extern "C" char* iWA_World_GetPacketBuf(void);
-extern "C" void iWA_World_ReceivePacket(void);
 
 
 class CCSocket : public CCObject
@@ -50,7 +41,7 @@ void CCSocket::check_socket_receive(float delta)
    //     CCLog("CCSocket::check_socket_receive() called");
 
         iWA_Auth_DoReceive();
-         iWA_World_ReceivePacket();  
+     //    iWA_World_ReceivePacket();  
 }
 
 
@@ -89,125 +80,16 @@ bool AppDelegate::applicationDidFinishLaunching()
 
 
 
-
-
-#if 0
-
-iWA_Mprint();
-	iWA_Auth_TestBn();
-	
-iWA_Mprint();
-
-   // iWA_Auth_TestSHA1();
-
-iWA_Mprint();
-
-	iWA_Auth_InitAuthInfoBlock();
-	char *pkt = iWA_Auth_GetPacketBuf();
-	int size = iWA_Auth_WriteLogonChallengeClientPacket();
-
-iWA_Mprint();
-
-	ODSocket cSocket;
-	int ret;
-
-	cSocket.Init();
-	ret = cSocket.Create(AF_INET,SOCK_STREAM,0);
-	ret = cSocket.Connect(_SERVER_IP_,3724);
-	char recvBuf[1024] = "\0";
-	
-	ret = cSocket.Send(pkt, size, 0);
-	ret = cSocket.Recv(recvBuf, 256,0);
-
-	memcpy(pkt, recvBuf, ret);
-	iWA_Auth_ReadLogonChallengeServerPacket();
-	iWA_Auth_CalculateClientSrpValue();
-	size = iWA_Auth_WriteLogonProofClientPacket();
-
-	ret = cSocket.Send(pkt, size, 0);
-	ret = cSocket.Recv(recvBuf,256,0);
-
-	memcpy(pkt, recvBuf, ret);
-	iWA_Auth_ReadLogonProofBuild6005ServerPacket();
-	size = iWA_Auth_WriteRealmListClientPacket();
-
-	ret = cSocket.Send(pkt, size, 0);
-	ret = cSocket.Recv(recvBuf,256,0);
-
-	memcpy(pkt, recvBuf, ret);
-	iWA_Auth_ReadRealmListClientPacket();
-	
-	iWA_Auth_PrintAuthInfoBlock();
-
-
-	
-	//CCMessageBox(recvBuf,"recived data is:");
-	
-	cSocket.Close();
-
 #if 1
-	iWA_World_InitSessionInfoBlock();
-	// iWA_World_PrintSessionInfoBlock();
 
-	pkt = iWA_World_GetPacketBuf();
+    CCLog("set scheduler");
+    CCSocket *soc = new CCSocket();
 
-	ret = cSocket.Create(AF_INET,SOCK_STREAM,0);
-	ret = cSocket.Connect(_SERVER_IP_,8085);
+    iWA_Auth_Init();
+    iWA_Auth_DoRegSample();
+    //iWA_Auth_DoAuthSample();
 
-	ret = cSocket.Recv(recvBuf,1024,0);
-	memcpy(pkt, recvBuf, ret);
-	iWA_World_ReadWorldServerPacket();
-	size = iWA_World_WriteCmsgAuthSessionPacket();
-
-	ret = cSocket.Send(pkt, size, 0);
-	ret = cSocket.Recv(recvBuf,1024,0);	
-	memcpy(pkt, recvBuf, ret);
-	iWA_World_ReadWorldServerPacket();
-	size = iWA_World_WriteCmsgCharEnumPacket();
-
-	ret = cSocket.Send(pkt, size, 0);
-	ret = cSocket.Recv(recvBuf,1024,0);	
-	memcpy(pkt, recvBuf, ret);
-	iWA_World_ReadWorldServerPacket();	
-	size = iWA_World_WriteCmsgPlayerLoginPacket();
-
-	ret = cSocket.Send(pkt, size, 0);
-	ret = cSocket.Recv(recvBuf,1024,0);	
-	memcpy(pkt, recvBuf, ret);
-	iWA_World_ReadWorldServerPacket();		
-
-
-
-
-	iWA_World_DeinitSessionInfoBlock();	
-#endif
-
-	iWA_Auth_DeinitAuthInfoBlock();
-
-
-	cSocket.Clean();
-
-
-
-iWA_Mprint();
-
-
-	return true;
-
-#endif
-
-
-    
-
-
-#if 1
-CCLog("set scheduler");
-CCSocket *soc = new CCSocket();
-
-iWA_Auth_Init();
-iWA_Auth_DoAuthSample();
-
-return 1;
+    return 1;
 #endif
 
     // register lua engine

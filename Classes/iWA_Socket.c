@@ -13,7 +13,7 @@
 
 #define iWAmacro_SOCKET_RECV_TIMEOUT                 (1)             /* 1s */
 #define iWAmacro_SOCKET_SEND_SEGMENT_SIZE        (1024)
-#define iWAmacro_SOCKET_SPLIT_HEADER_SIZE_MIN      (4)
+#define iWAmacro_SOCKET_SPLIT_HEADER_SIZE_MIN      (1)
 
 
 
@@ -393,6 +393,8 @@ static void* session_thread(void *data)
 #else
     close(sock);
 #endif
+
+    iWA_Log("socket session end");
 
     iWA_Free(split_header);
     pthread_exit(NULL);

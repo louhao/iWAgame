@@ -53,6 +53,7 @@ enum
     iWAenum_AUTH_MSG_REG_OK                                          = 0x10,
     iWAenum_AUTH_MSG_REG_CONNECT_ERROR                     = 0x11,    
     iWAenum_AUTH_MSG_REG_USERNAME_EXIST                    = 0x12,    
+    iWAenum_AUTH_MSG_REG_CREATE_FAIL                           = 0x13,        
 };
 
 enum

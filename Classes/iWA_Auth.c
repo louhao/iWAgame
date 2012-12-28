@@ -5,8 +5,16 @@
 
 
 
+typedef void (*iWApfunc_Auth_AuthMsgCb)(iWAuint32, void*);
 
+#define iWAmacro_AUTH_INFO_REALM_NAME_MAXIUM          (32)
+#define iWAmacro_AUTH_INFO_REALM_ADDRESS_MAXIUM    (32)
 
+#define iWAmacro_AUTH_INFO_USERNAME_MAXIUM             (32)
+#define iWAmacro_AUTH_INFO_PASSWORD_MAXIUM            (32)
+
+#define iWAmacro_AUTH_INFO_PACKET_MAXIUM                  (1024)
+#define iWAmacro_AUTH_INFO_REALM_MAXIUM                   (5*10)
 
 typedef struct 
 {
@@ -79,7 +87,18 @@ typedef struct
 }iWAstruct_Auth_RealmListServerPacketHeader;
 
 
+typedef struct 
+{
+    iWAuint8   cmd;                //iWAenum_AUTH_CMD_CREATE_ACCOUNT
+    iWAuint8   username[iWAmacro_AUTH_INFO_USERNAME_MAXIUM]; 
+    iWAuint8   password[iWAmacro_AUTH_INFO_PASSWORD_MAXIUM]; 
+}iWAstruct_Auth_CreateAccountClientPacket;
 
+typedef struct
+{
+    iWAuint8   cmd;                /* iWAenum_AUTH_CMD_CREATE_ACCOUNT */
+    iWAuint8   error;
+} iWAstruct_Auth_CreateAccountServerPacket;
 
 
 
@@ -90,6 +109,7 @@ enum
     iWAenum_AUTH_CMD_AUTH_RECONNECT_CHALLENGE    = 0x02,
     iWAenum_AUTH_CMD_AUTH_RECONNECT_PROOF        = 0x03,
     iWAenum_AUTH_CMD_REALM_LIST                  = 0x10,
+    iWAenum_AUTH_CMD_CREATE_ACCOUNT        = 0x20,    
     iWAenum_AUTH_CMD_XFER_INITIATE               = 0x30,
     iWAenum_AUTH_CMD_XFER_DATA                   = 0x31,
     // these opcodes no longer exist in currently supported client
@@ -122,10 +142,16 @@ enum
     iWAenum_AUTH_RESULT_FAIL_USE_BATTLENET          = 0x12,                 ///< iWAenum_AUTH_RESULT_FAIL_OTHER This account is now attached to a Battle.net account. Please login with your Battle.net account email address and password.
 };
 
-typedef void (*iWApfunc_Auth_AuthMsgCb)(iWAuint32, void*);
+enum    /* create account result code */
+{
+    iWAenum_AUTH_AOR_OK = 0,
+    iWAenum_AUTH_AOR_NAME_TOO_LONG,
+    iWAenum_AUTH_AOR_PASS_TOO_LONG,
+    iWAenum_AUTH_AOR_NAME_ALREDY_EXIST,
+    iWAenum_AUTH_AOR_NAME_NOT_EXIST,
+    iWAenum_AUTH_AOR_DB_INTERNAL_ERROR
+};
 
-#define iWAmacro_AUTH_INFO_REALM_NAME_MAXIUM          (32)
-#define iWAmacro_AUTH_INFO_REALM_ADDRESS_MAXIUM    (32)
 
 
 typedef struct
@@ -141,10 +167,7 @@ typedef struct
 }iWAstruct_Auth_RealmList;
 
 
-#define iWAmacro_AUTH_INFO_USERNAME_MAXIUM             (64)
-#define iWAmacro_AUTH_INFO_PASSWORD_MAXIUM            (64)
-#define iWAmacro_AUTH_INFO_PACKET_MAXIUM                  (1024)
-#define iWAmacro_AUTH_INFO_REALM_MAXIUM                   (5*10)
+
 
 
 typedef struct
@@ -180,10 +203,12 @@ static void handle_auth_packet(void);
 
 static iWAbool read_logon_challenge_server_packet(void);
 static iWAbool read_logon_proof_build6005_server_packet(void);
-static iWAbool read_realm_list_client_packet(void);
+static iWAbool read_realm_list_server_packet(void);
+static iWAuint32 read_create_account_server_packet(void);
 static iWAbool write_logon_challege_client_packet(void);
 static iWAbool write_logon_proof_client_packet(void);
 static iWAbool write_realm_list_client_packet(void);
+static iWAbool write_create_account_client_packet(void);
 static iWAbool calculate_client_SRP_value(void);
 
 
@@ -218,6 +243,9 @@ static iWAuint32 split_auth_packet(iWAuint8 *pkt, iWAuint32 len)
         case iWAenum_AUTH_CMD_REALM_LIST:
             size = iWA_Net_ReadPacketUint16(pkt+1) + 3;
             break;
+        case iWAenum_AUTH_CMD_CREATE_ACCOUNT:
+            size = sizeof(iWAstruct_Auth_CreateAccountServerPacket);
+            break;     
         default:
             size = 0;
     }
@@ -244,6 +272,8 @@ static iWAbool receive_auth_packet(void)
 
 static void handle_auth_packet(void)
 {
+    iWAuint32 ret, msg;
+    
     iWA_Log("handle_auth_packet()");
     
     switch(auth_info_block.packet[0])
@@ -256,6 +286,7 @@ static void handle_auth_packet(void)
                 send_auth_packet();
             }    
             break;
+            
         case iWAenum_AUTH_CMD_AUTH_LOGON_PROOF:
             if(read_logon_proof_build6005_server_packet())
             {
@@ -268,9 +299,10 @@ static void handle_auth_packet(void)
                 send_auth_packet();
             }
             break;
+            
         case iWAenum_AUTH_CMD_REALM_LIST:
             /* read list */
-            read_realm_list_client_packet();
+            read_realm_list_server_packet();
             print_auth_info_block();
 
             /* close seesion */
@@ -282,7 +314,35 @@ static void handle_auth_packet(void)
             if(auth_info_block.func_auth_msg_cb != NULL)    
                 ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_MSG_AUTH_SERVER_LIST, (void*)&auth_info_block.server[0]);
 
-            break;        
+            break;       
+            
+        case iWAenum_AUTH_CMD_CREATE_ACCOUNT:
+            ret = read_create_account_server_packet();
+            
+            /* close seesion */
+            disable_auth_seesion();
+            iWA_Socket_DeinitSession();
+
+            /* send msg */
+            if(auth_info_block.func_reg_msg_cb != NULL) 
+            {
+                switch(ret)
+                {
+                    case iWAenum_AUTH_AOR_OK:
+                        msg = iWAenum_AUTH_MSG_REG_OK;
+                        break;
+                    case iWAenum_AUTH_AOR_NAME_ALREDY_EXIST:
+                        msg = iWAenum_AUTH_MSG_REG_USERNAME_EXIST;
+                        break;
+                    default:
+                        msg = iWAenum_AUTH_MSG_REG_CREATE_FAIL;
+                        break;
+                }
+
+                ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_reg_msg_cb)(msg, NULL);
+            }
+            
+            break;
     }
 }
 
@@ -443,7 +503,7 @@ static iWAbool write_realm_list_client_packet(void)
     return 1;
 }
 
-static iWAbool read_realm_list_client_packet(void)
+static iWAbool read_realm_list_server_packet(void)
 {
     iWAstruct_Auth_RealmListServerPacketHeader *packet;
     iWAstruct_Auth_RealmList *realm;
@@ -451,7 +511,7 @@ static iWAbool read_realm_list_client_packet(void)
     iWAuint8 *p, *c;
     iWAuint16 i;
 
-    iWA_Log("read_realm_list_client_packet()");
+    iWA_Log("read_realm_list_server_packet()");
 
     packet = (iWAstruct_Auth_RealmListServerPacketHeader*)auth_info_block.packet;
 
@@ -516,8 +576,51 @@ static iWAbool read_realm_list_client_packet(void)
 
 }
 
+static iWAbool write_create_account_client_packet(void) 
+{
+    iWAstruct_Auth_CreateAccountClientPacket *packet;
+
+    iWA_Log("write_create_account_client_packet()");
+
+    packet = (iWAstruct_Auth_CreateAccountClientPacket*)auth_info_block.packet;
+
+    iWA_Std_memset((void*)packet, 0, sizeof(iWAstruct_Auth_CreateAccountClientPacket));
+
+    packet->cmd = iWAenum_AUTH_CMD_CREATE_ACCOUNT;
+    iWA_Std_strcpy(packet->username, auth_info_block.username);
+    iWA_Std_strcpy(packet->password, auth_info_block.password);
+
+    auth_info_block.packet_len = sizeof(iWAstruct_Auth_CreateAccountClientPacket);
+    
+    return 1;
+}
+
+static iWAuint32 read_create_account_server_packet(void)
+{
+    iWAstruct_Auth_CreateAccountServerPacket *packet;
+
+    iWA_Log("read_create_account_server_packet()");
+
+    packet = (iWAstruct_Auth_CreateAccountServerPacket*)auth_info_block.packet;
+
+    return (iWAuint32)packet->error;   
+}
+
 static iWAbool calculate_client_SRP_value(void)
 {
+#if   _iWA_CLIENT_
+    BIGNUM *I;
+
+    I = &auth_info_block.A;
+    BN_hex2bn(&I, "46301CBF4BAB8CB63FA7635B4ED811924539FB3A8473DFA46AA61D6DC868CF67");
+    I = &auth_info_block.M1;
+    BN_hex2bn(&I, "7497BCA19AFC28F2777764FB33A1034BA80E63FC");
+    I = &auth_info_block.K;
+    BN_hex2bn(&I, "D10FDB0FB4FDC4893290764BEDE4500631EB2E3FCCBDE656A710E8A6FA6736933E9C63562D895729");    
+    return 1;
+
+#else
+
     iWAbool ret = 0;
     BN_CTX *bn_ctx = BN_CTX_new();
     BIGNUM *I = BN_new(), *p = BN_new(), *u = BN_new(), *x = BN_new();
@@ -527,15 +630,7 @@ static iWAbool calculate_client_SRP_value(void)
 
     iWA_Log("calculate_client_SRP_value()");
 
-#if   _iWA_CLIENT_
-    I = &auth_info_block.A;
-    BN_hex2bn(&I, "46301CBF4BAB8CB63FA7635B4ED811924539FB3A8473DFA46AA61D6DC868CF67");
-    I = &auth_info_block.M1;
-    BN_hex2bn(&I, "7497BCA19AFC28F2777764FB33A1034BA80E63FC");
-    I = &auth_info_block.K;
-    BN_hex2bn(&I, "D10FDB0FB4FDC4893290764BEDE4500631EB2E3FCCBDE656A710E8A6FA6736933E9C63562D895729");    
-    return 1;
-#endif
+
 
     if(sha_ctx == NULL || bn_ctx == NULL || I == NULL || p == NULL || u == NULL || x == NULL)   goto end;
     if(S1 == NULL || S2 == NULL || S3 == NULL)   goto end;
@@ -640,6 +735,8 @@ end:
     iWA_Free((iWAuint8*)sha_ctx);
     
     return ret;
+
+#endif
 }
 
 
@@ -721,7 +818,17 @@ iWAbool iWA_Auth_DoReg(iWAuint8 *server, iWAuint16 port, iWAuint8 *username, iWA
 
     if(server == NULL || username == NULL || password == NULL)  return 0;
 
+    iWA_Std_strcpy(auth_info_block.username, username);
+    iWA_Std_strcpy(auth_info_block.password, password);    
     auth_info_block.func_reg_msg_cb = msg_cb;
+
+    if(!iWA_Socket_InitSession(server, port, 1024, 1024, (void*)split_auth_packet, 2, NULL))    return 0;
+    
+    enable_auth_seesion();
+    write_create_account_client_packet();
+    send_auth_packet();
+
+    return 1;    
 }
 
 void iWA_Auth_DoReceive(void)
@@ -763,16 +870,33 @@ static void auth_msg_callback(iWAuint32 msg, void *data)
                 iWA_Log("[Server Name]  %s", server->name);
                 ++server;
             }
-            
             break;
+        case iWAenum_AUTH_MSG_REG_OK:
+            iWA_Log("Create Account OK");
+            break;
+        case iWAenum_AUTH_MSG_REG_CONNECT_ERROR:
+            iWA_Log("Connect Server Error");
+            break;
+        case iWAenum_AUTH_MSG_REG_USERNAME_EXIST:
+            iWA_Log("Username already exists");
+            break;
+        case iWAenum_AUTH_MSG_REG_CREATE_FAIL:
+            iWA_Log("Create Account Fail");
+            break;        
     }
 
+    if(msg >= iWAenum_AUTH_MSG_REG_OK)
+        iWA_Auth_DoAuthSample();
 }
 
 
 iWAbool iWA_Auth_DoAuthSample(void)
 {
-    iWA_Auth_DoAuth("127.0.0.1", 3724, "LOUHAO", "LOUHAO", (void*)auth_msg_callback);
+    return iWA_Auth_DoAuth(_SERVER_IP_, 3724, "LOUHAO2", "LOUHAO2", (void*)auth_msg_callback);
 }
 
+iWAbool iWA_Auth_DoRegSample(void)
+{
+    return iWA_Auth_DoReg(_SERVER_IP_, 3724, "LOUHAO2", "LOUHAO2", (void*)auth_msg_callback);
+}
 

@@ -1,4 +1,4 @@
-ï»¿<?xml version="1.0" encoding="UTF-8"?>
+ï»??xml version="1.0" encoding="UTF-8"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
@@ -73,7 +73,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libcocos2d.lib libCocosDenshion.lib opengl32.lib glew32.lib liblua.lib libcurl_imp.lib pthreadVCE2.lib"
+				AdditionalDependencies="libcocos2d.lib libCocosDenshion.lib opengl32.lib glew32.lib liblua.lib libcurl_imp.lib pthreadVCE2.lib wsock32.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(OutDir)"
 				GenerateDebugInformation="true"
@@ -227,14 +227,6 @@
 			</File>
 			<File
 				RelativePath="..\Classes\iWA_World.c"
-				>
-			</File>
-			<File
-				RelativePath="..\Classes\ODSocket.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Classes\ODSocket.h"
 				>
 			</File>
 			<Filter
@@ -418,10 +410,6 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath="..\..\..\cocos2dx\platform\third_party\win32\libraries\libcurl_imp.lib"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>
