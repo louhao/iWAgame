@@ -19,7 +19,7 @@ extern "C" int iWA_Auth_DoAuth(char *server, short port, char *username, char *p
 extern "C" int iWA_Auth_DoReg(char *server, short port, char *username, char *password, void *cb);
 extern "C" int iWA_Auth_DoAuthSample(void);
 extern "C" int iWA_Auth_DoRegSample(void);
-
+extern "C" void iWA_World_DoReceive(void);
 
 
 class CCSocket : public CCObject
@@ -40,8 +40,8 @@ void CCSocket::check_socket_receive(float delta)
 {
    //     CCLog("CCSocket::check_socket_receive() called");
 
-        iWA_Auth_DoReceive();
-     //    iWA_World_ReceivePacket();  
+    iWA_Auth_DoReceive();
+    iWA_World_DoReceive();  
 }
 
 

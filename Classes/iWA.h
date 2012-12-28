@@ -120,18 +120,14 @@ extern BIGNUM* iWA_Auth_GetK(void);
 extern void iWA_Auth_DoReceive(void);
 extern iWAbool iWA_Auth_DoAuth(iWAuint8 *server, iWAuint16 port, iWAuint8 *username, iWAuint8 *password, void *msg_cb);
 extern iWAbool iWA_Auth_DoReg(iWAuint8 *server, iWAuint16 port, iWAuint8 *username, iWAuint8 *password, void *msg_cb);
+extern iWAbool iWA_Auth_DoAuthSample(void);
+extern iWAbool iWA_Auth_DoRegSample(void);
 
-extern void iWA_World_InitSessionInfoBlock(void);
-extern void iWA_World_DeinitSessionInfoBlock(void);
-extern void iWA_World_PrintSessionInfoBlock(void);
-//extern void iWA_World_ReadWorldServerPacket(void);
-extern iWAuint32 iWA_World_WriteCmsgAuthSessionPacket(void);
-extern iWAuint32 iWA_World_WriteCmsgCharEnumPacket(void);
-extern iWAuint32 iWA_World_WriteCmsgPlayerLoginPacket(void);
-//extern iWAuint8* iWA_World_GetPacketBuf(void);
-extern void iWA_World_SendPacket(void);
-extern void iWA_World_ReceivePacket(void);
-
+extern void iWA_World_Init(void);
+extern void iWA_World_Deinit(void);
+extern iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb);
+extern void iWA_World_DoReceive(void);
+extern iWAbool iWA_World_StartSample(iWAuint8 *server, iWAuint16 port);
 
 extern iWAbool iWA_Socket_InitSession(iWAuint8 *ip, iWAuint16 port, iWAuint32 send_buf_size, iWAuint32 recv_buf_size, void *func_split, iWAuint32 split_size, void *func_decrypt);
 extern void iWA_Socket_DeinitSession(void);

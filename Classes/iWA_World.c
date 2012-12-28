@@ -1017,6 +1017,9 @@ enum
 };
 
 
+typedef void (*iWApfunc_World_WorldMsgCb)(iWAuint32, void*);
+
+
 static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAuint16 *cmd);
 static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint32 cmd);
 static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size);
@@ -1032,6 +1035,7 @@ static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size);
 
 typedef struct
 {
+    void *func_msg_cb;
     iWAuint8 username[iWAmacro_WORLD_SEESION_INFO_USERNAME_MAXIUM];
     iWAuint8 packet[iWAmacro_WORLD_SEESION_INFO_PACKET_MAXIUM];    
     iWAuint32 packet_len;
@@ -1043,15 +1047,23 @@ typedef struct
     BIGNUM K, D;
     iWAuint8 character_guid[8];
     iWAuint8 character_name[iWAmacro_WORLD_CHARACTER_NAME_MAXIUM];
-    iWAuint8 valid;
+    iWAuint8 session_valid;
 }iWAstruct_World_SessionInfoBlock;
 
-static iWAstruct_World_SessionInfoBlock seesion_info_block = {0};
+static iWAstruct_World_SessionInfoBlock session_info_block = {0};
 
 
 #define iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE    (4)
 #define iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE    (6)
 
+static void enable_world_seesion(void);
+static void disable_world_seesion(void);
+static iWAbool check_world_session(void);
+static void print_session_info_block(void);
+
+static iWAbool send_world_packet(void);
+static iWAbool receive_world_packet(void);
+static void handle_world_packet(void);
 
 static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAuint16 *cmd);
 static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint32 cmd);
@@ -1062,48 +1074,81 @@ static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size);
 static void handle_smsg_auth_response_packet(iWAuint8 *packet, iWAuint16 size);
 static void handle_smsg_char_enum_packet(iWAuint8 *packet, iWAuint16 size);
 
+static iWAbool write_cmsg_auth_session_packet(void);
+static iWAbool write_cmsg_char_enum_packet(void);
+static iWAbool write_cmsg_player_login_packet(void);
 
 
-#if 0
-
-static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAuint16 *cmd)
+static void enable_world_seesion(void)
 {
-    iWAuint32 t;
-    iWAuint8 x;
-
-    iWA_Log("read_server_packet_header()");
-
-    if(packet == NULL || size == NULL || cmd == NULL)     return 0;
-
-   // iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
-
-    if(!seesion_info_block.do_crypto)
-    {
-        *size = (((iWAuint16)packet[0] << 8) |(iWAuint16)packet[1]) - 2;
-        *cmd = iWA_Net_ReadPacketUint16(packet+2);
-
-        if(*cmd == SMSG_AUTH_CHALLENGE || *cmd == SMSG_AUTH_RESPONSE)   return 1;
-
-        /* this packet already been encrypted, change state */
-        seesion_info_block.do_crypto = 1;
-    }
-    for(t = 0; t < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE; t++)
-    {
-        seesion_info_block.recv_i %= seesion_info_block.key_size;
-        x = (packet[t] - seesion_info_block.recv_j) ^ seesion_info_block.key[seesion_info_block.recv_i];
-        ++seesion_info_block.recv_i;
-        seesion_info_block.recv_j = packet[t];
-        packet[t] = x;
-    
-    }
-  //  iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
-
-    *size = (((iWAuint16)packet[0] << 8) |(iWAuint16)packet[1]) - 2;
-    *cmd = iWA_Net_ReadPacketUint16(packet+2);
-    
-    return 1;
+    session_info_block.session_valid = 1;
 }
-#endif
+
+static void disable_world_seesion(void)
+{
+    session_info_block.session_valid = 0;
+}
+
+static iWAbool check_world_session(void)
+{
+    return !!session_info_block.session_valid;
+}
+
+static void print_session_info_block(void)
+{
+    iWA_Log("print_session_info_block()");
+
+    iWA_Dump(session_info_block.key, session_info_block.key_size);
+}
+
+
+static iWAbool send_world_packet(void)
+{
+    iWA_Log("send_world_packet()");
+
+    if(!check_world_session())     return 0;
+
+    return iWA_Socket_SendPacket(session_info_block.packet, session_info_block.packet_len);    
+}
+
+static iWAbool receive_world_packet(void)
+{
+    if(!check_world_session())     return 0;
+
+    return iWA_Socket_ReceivePacket(session_info_block.packet, &session_info_block.packet_len);
+}
+
+
+static void handle_world_packet(void)
+{
+    iWAuint16 size, cmd;
+
+    iWA_Log("handle_world_packet()");
+    
+    if(!read_server_packet_header(session_info_block.packet, &size, &cmd))  return;
+
+    switch(cmd)
+    {
+        case SMSG_AUTH_CHALLENGE:
+            handle_smsg_auth_challenge_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
+            write_cmsg_auth_session_packet();
+            send_world_packet();
+            break;
+        case SMSG_AUTH_RESPONSE:
+            handle_smsg_auth_response_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
+            write_cmsg_char_enum_packet();
+            send_world_packet();
+            break;
+        case SMSG_CHAR_ENUM:
+            handle_smsg_char_enum_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
+            write_cmsg_player_login_packet();
+            send_world_packet();
+            break;
+        default:
+            iWA_Log("server packet cmd: 0x%04x", cmd);
+    }    
+}
+
 
 
 static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAuint16 *cmd)
@@ -1138,15 +1183,15 @@ static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint
 
 //    iWA_Dump(packet, iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE);
 
-    if(seesion_info_block.do_crypto)
+    if(session_info_block.do_crypto)
     {
 
         for(t = 0; t < iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE; t++)
         {
-            seesion_info_block.send_i %= seesion_info_block.key_size;
-            x = (packet[t] ^ seesion_info_block.key[seesion_info_block.send_i]) + seesion_info_block.send_j;
-            ++seesion_info_block.send_i;
-            packet[t] = seesion_info_block.send_j = x;
+            session_info_block.send_i %= session_info_block.key_size;
+            x = (packet[t] ^ session_info_block.key[session_info_block.send_i]) + session_info_block.send_j;
+            ++session_info_block.send_i;
+            packet[t] = session_info_block.send_j = x;
         
         }
     }
@@ -1168,7 +1213,7 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
 
 //    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
-    if(!seesion_info_block.do_crypto)
+    if(!session_info_block.do_crypto)
     {
         size = (((iWAuint16)pkt[0] << 8) |(iWAuint16)pkt[1]) - 2;
         cmd = iWA_Net_ReadPacketUint16(pkt+2);
@@ -1176,15 +1221,15 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
         if(cmd == SMSG_AUTH_CHALLENGE || cmd == SMSG_AUTH_RESPONSE)   return size+4;
 
         /* this packet already been encrypted, change state */
-        seesion_info_block.do_crypto = 1;
+        session_info_block.do_crypto = 1;
     }
 
-    recv_i = seesion_info_block.recv_i;
-    recv_j = seesion_info_block.recv_j;
+    recv_i = session_info_block.recv_i;
+    recv_j = session_info_block.recv_j;
     for(t = 0; t < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE; t++)
     {
-        recv_i %= seesion_info_block.key_size;
-        x = (pkt[t] - recv_j) ^ seesion_info_block.key[recv_i];
+        recv_i %= session_info_block.key_size;
+        x = (pkt[t] - recv_j) ^ session_info_block.key[recv_i];
         ++recv_i;
         recv_j = pkt[t];
         pkt[t] = x;
@@ -1209,104 +1254,20 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len)
 
 //    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
-    if(seesion_info_block.do_crypto)
+    if(session_info_block.do_crypto)
     {
         for(t = 0; t < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE; t++)
         {
-            seesion_info_block.recv_i %= seesion_info_block.key_size;
-            x = (pkt[t] - seesion_info_block.recv_j) ^ seesion_info_block.key[seesion_info_block.recv_i];
-            ++seesion_info_block.recv_i;
-            seesion_info_block.recv_j = pkt[t];
+            session_info_block.recv_i %= session_info_block.key_size;
+            x = (pkt[t] - session_info_block.recv_j) ^ session_info_block.key[session_info_block.recv_i];
+            ++session_info_block.recv_i;
+            session_info_block.recv_j = pkt[t];
             pkt[t] = x;
         }
     }
     
 //    iWA_Dump(pkt, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 }
-
-void iWA_World_InitSessionInfoBlock()
-{
-    iWA_Log("iWA_World_InitSeesionInfoBlock()");
-
-    iWA_Std_memset((void*)&seesion_info_block, 0, sizeof(iWAstruct_World_SessionInfoBlock));
-
-    iWA_Std_strcpy(seesion_info_block.username, iWA_Auth_GetUsername());
-
-    BN_copy(&seesion_info_block.K, iWA_Auth_GetK());
-    BN_init(&seesion_info_block.D);
-
-    seesion_info_block.key_size = iWA_Net_WritePacketBigNumber(seesion_info_block.key, &seesion_info_block.K);
-
-    seesion_info_block.valid = 1;
-
-    iWA_Socket_InitSession(_SERVER_IP_, 8085, 1024, 1024, (void*)split_world_packet, 4, (void*)decrypt_world_packet);
-}
-
-void iWA_World_DeinitSessionInfoBlock()
-{
-    iWA_Log("iWA_World_DeinitSessionInfoBlock()");
-
-    seesion_info_block.valid = 0;
-
-    BN_free(&seesion_info_block.K);
-    BN_free(&seesion_info_block.D);
-
-    iWA_Socket_DeinitSession();
-}
-
-void iWA_World_PrintSessionInfoBlock()
-{
-    iWA_Log("iWA_World_PrintSessionInfoBlock()");
-
-    iWA_Dump(seesion_info_block.key, seesion_info_block.key_size);
-}
-
-
-void iWA_World_SendPacket(void)
-{
-    iWA_Log("iWA_World_SendPacket()");
-
-    if(!seesion_info_block.valid)     return;
-
-    iWA_Socket_SendPacket(seesion_info_block.packet, seesion_info_block.packet_len);    
-}
-
-void iWA_World_ReceivePacket(void)
-{
-    iWAuint16 size, cmd;
-    //iWA_Log("iWA_World_ReceivePacket()");
-
-    if(!seesion_info_block.valid)     return;
-
-    if(iWA_Socket_ReceivePacket(seesion_info_block.packet, &seesion_info_block.packet_len))
-    {
-        iWA_Log("iWA_World_ReceivePacket() get new packet");
-    
-        if(!read_server_packet_header(seesion_info_block.packet, &size, &cmd))  return;
-
-        switch(cmd)
-        {
-            case SMSG_AUTH_CHALLENGE:
-                handle_smsg_auth_challenge_packet(seesion_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-                iWA_World_WriteCmsgAuthSessionPacket();
-                iWA_World_SendPacket();
-                break;
-            case SMSG_AUTH_RESPONSE:
-                handle_smsg_auth_response_packet(seesion_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-                iWA_World_WriteCmsgCharEnumPacket();
-                iWA_World_SendPacket();
-                break;
-            case SMSG_CHAR_ENUM:
-                handle_smsg_char_enum_packet(seesion_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-                iWA_World_WriteCmsgPlayerLoginPacket();
-                iWA_World_SendPacket();
-                break;
-            default:
-                iWA_Log("server packet cmd: 0x%04x", cmd);
-        }    
-    }
-}
-
 
 
 static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size)
@@ -1325,19 +1286,19 @@ static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size)
     BN_init(&cs);
     BN_rand(&cs, 4*8, 0, 1);
     iWA_Net_WritePacketBigNumber(buf, &cs);
-    seesion_info_block.client_seed = iWA_Net_ReadPacketUint32(buf);
+    session_info_block.client_seed = iWA_Net_ReadPacketUint32(buf);
     BN_free(&cs);
 
     sha_ctx = (SHA1Context*)iWA_Malloc(sizeof(SHA1Context));
     if(sha_ctx == NULL)  return;
 
     SHA1Reset(sha_ctx);
-    SHA1Input(sha_ctx, seesion_info_block.username, iWA_Std_strlen(seesion_info_block.username));  
+    SHA1Input(sha_ctx, session_info_block.username, iWA_Std_strlen(session_info_block.username));  
     iWA_Crypto_Sha1InputUint32(sha_ctx, 0);  /* input t=0 */
-    iWA_Crypto_Sha1InputUint32(sha_ctx, seesion_info_block.client_seed);  
+    iWA_Crypto_Sha1InputUint32(sha_ctx, session_info_block.client_seed);  
     iWA_Crypto_Sha1InputUint32(sha_ctx, server_seed);  
-    iWA_Crypto_Sha1InputBigNumber(sha_ctx, &seesion_info_block.K);  
-    iWA_Crypto_Sha1ResultBigNumber(sha_ctx, &seesion_info_block.D);
+    iWA_Crypto_Sha1InputBigNumber(sha_ctx, &session_info_block.K);  
+    iWA_Crypto_Sha1ResultBigNumber(sha_ctx, &session_info_block.D);
 
     iWA_Free((iWAuint8*)sha_ctx);
 }
@@ -1423,22 +1384,22 @@ static void handle_smsg_char_enum_packet(iWAuint8 *packet, iWAuint16 size)
 
         iWA_Log("char%d name : %s", i+1, name);
 
-        if(i == 0)  /* store first character info into seesion_info_block */
+        if(i == 0)  /* store first character info into session_info_block */
         {
-            iWA_Std_memcpy(seesion_info_block.character_guid, guid, 8);
-            iWA_Std_strcpy(seesion_info_block.character_name, name);
+            iWA_Std_memcpy(session_info_block.character_guid, guid, 8);
+            iWA_Std_strcpy(session_info_block.character_name, name);
         }
     }
 }
 
 
-iWAuint32 iWA_World_WriteCmsgAuthSessionPacket()
+static iWAbool write_cmsg_auth_session_packet(void)
 {
-    iWAuint8 *p = seesion_info_block.packet;
+    iWAuint8 *p = session_info_block.packet;
 
-    iWA_Log("iWA_World_WriteCmsgAuthSessionPacket()");
+    iWA_Log("write_cmsg_auth_session_packet()");
 
-    write_client_packet_header(p, 4+4+iWA_Std_strlen(seesion_info_block.username)+1+4+20, CMSG_AUTH_SESSION);
+    write_client_packet_header(p, 4+4+iWA_Std_strlen(session_info_block.username)+1+4+20, CMSG_AUTH_SESSION);
     p += iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE;
 
     iWA_Net_WritePacketUint32(p, iWA_Auth_GetClientBuild());
@@ -1447,82 +1408,122 @@ iWAuint32 iWA_World_WriteCmsgAuthSessionPacket()
     iWA_Net_WritePacketUint32(p, 0);    /* unk2 value */
     p += 4;    
 
-    iWA_Std_strcpy(p, seesion_info_block.username);
-    p += (iWA_Std_strlen(seesion_info_block.username) + 1);
+    iWA_Std_strcpy(p, session_info_block.username);
+    p += (iWA_Std_strlen(session_info_block.username) + 1);
 
-    iWA_Net_WritePacketUint32(p, seesion_info_block.client_seed);
+    iWA_Net_WritePacketUint32(p, session_info_block.client_seed);
     p += 4;
 
-    p += iWA_Net_WritePacketBigNumber(p, &seesion_info_block.D);
+    p += iWA_Net_WritePacketBigNumber(p, &session_info_block.D);
 
-    seesion_info_block.packet_len = (p - seesion_info_block.packet);
+    session_info_block.packet_len = (p - session_info_block.packet);
 
-    return seesion_info_block.packet_len;
+    return 1;
 }
 
 
-iWAuint32 iWA_World_WriteCmsgCharEnumPacket()
+static iWAbool write_cmsg_char_enum_packet(void)
 {
-    iWAuint8 *p = seesion_info_block.packet;
+    iWAuint8 *p = session_info_block.packet;
 
-    iWA_Log("iWA_World_WriteCmsgCharEnumPacket()");
+    iWA_Log("write_cmsg_char_enum_packet()");
 
     write_client_packet_header(p, 0, CMSG_CHAR_ENUM);
     p += iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE;
 
-    seesion_info_block.packet_len = (p - seesion_info_block.packet);
+    session_info_block.packet_len = (p - session_info_block.packet);
 
-    return seesion_info_block.packet_len;
+    return 1;
 }
 
-iWAuint32 iWA_World_WriteCmsgPlayerLoginPacket()
+static iWAbool write_cmsg_player_login_packet(void)
 {
-    iWAuint8 *p = seesion_info_block.packet;
+    iWAuint8 *p = session_info_block.packet;
 
-    iWA_Log("iWA_World_WriteCmsgPlayerLoginPacket()");
+    iWA_Log("write_cmsg_player_login_packet()");
 
     write_client_packet_header(p, 8, CMSG_PLAYER_LOGIN);
     p += iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE;
 
-    iWA_Std_memcpy(p, seesion_info_block.character_guid, 8);
+    iWA_Std_memcpy(p, session_info_block.character_guid, 8);
     p += 8;
 
-    seesion_info_block.packet_len = (p - seesion_info_block.packet);
+    session_info_block.packet_len = (p - session_info_block.packet);
 
-    return seesion_info_block.packet_len;
+    return 1;
 }
 
 
-#if 0
-void iWA_World_ReadWorldServerPacket()
+void iWA_World_Init(void)
 {
-    iWAuint16 size, cmd;
+    iWA_Log("iWA_World_Init()");
 
-    iWA_Log("iWA_World_ReadWorldServerPacket()");
+    iWA_Std_memset((void*)&session_info_block, 0, sizeof(iWAstruct_World_SessionInfoBlock));
+
+    iWA_Std_strcpy(session_info_block.username, iWA_Auth_GetUsername());
+
+    BN_copy(&session_info_block.K, iWA_Auth_GetK());
+    BN_init(&session_info_block.D);
+
+    session_info_block.key_size = iWA_Net_WritePacketBigNumber(session_info_block.key, &session_info_block.K);
+}
+
+void iWA_World_Deinit(void)
+{
+    iWA_Log("iWA_World_Deinit()");
+
+    BN_free(&session_info_block.K);
+    BN_free(&session_info_block.D);
+
+    iWA_Std_memset((void*)&session_info_block, 0, sizeof(iWAstruct_World_SessionInfoBlock));
+}
+
+
+
+iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb)
+{
+    iWA_Log("iWA_World_Start()");
+
+    if(server == NULL)  return 0;
+
+    session_info_block.func_msg_cb = msg_cb;
+
+    if(!iWA_Socket_InitSession(server, port, 1024, 1024, (void*)split_world_packet, 4, (void*)decrypt_world_packet))    return 0;
     
-    if(!read_server_packet_header(seesion_info_block.packet, &size, &cmd)) return;
+    enable_world_seesion();
 
-    switch(cmd)
+    return 1;    
+}
+
+
+
+void iWA_World_DoReceive(void)
+{
+    if(receive_world_packet())   handle_world_packet();
+}
+
+
+/****************************  iWA_Auth_DoAuth()  usage sample ***********************************/
+
+static void world_msg_callback(iWAuint32 msg, void *data)
+{
+    iWA_Log("world_msg_callback msg: 0x%02x", msg);
+
+#if 0    
+    switch(msg)
     {
-        case SMSG_AUTH_CHALLENGE:
-            handle_smsg_auth_challenge_packet(seesion_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-            break;
-        case SMSG_AUTH_RESPONSE:
-            handle_smsg_auth_response_packet(seesion_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-            break;
-        case SMSG_CHAR_ENUM:
-            handle_smsg_char_enum_packet(seesion_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
+        case iWAenum_AUTH_MSG_AUTH_OK:
+            iWA_Log("Pass Auth, Start Getting Server List");
             break;
     }
-}
-
-
-iWAuint8* iWA_World_GetPacketBuf()
-{
-    return  seesion_info_block.packet;
-}
-
 #endif
+}
+
+
+iWAbool iWA_World_StartSample(iWAuint8 *server, iWAuint16 port)
+{
+    return iWA_World_Start(server, port, (void*)world_msg_callback);
+}
 
 
 

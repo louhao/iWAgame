@@ -864,11 +864,20 @@ static void auth_msg_callback(iWAuint32 msg, void *data)
         case iWAenum_AUTH_MSG_AUTH_SERVER_LIST:
             iWA_Log("Game Server List:");
 
+            /* read server list */
             server = (iWAstruct_Auth_Server*)data;
             while(server->region > 0)
             {
-                iWA_Log("[Server Name]  %s", server->name);
+                iWA_Log("[Server %s]  %s:%d", server->name, server->address, server->port);
                 ++server;
+            }
+
+            /* connect first game server */
+            server = (iWAstruct_Auth_Server*)data;
+            if(server->region > 0)
+            {
+                iWA_World_Init();
+                iWA_World_StartSample(server->address, server->port);
             }
             break;
         case iWAenum_AUTH_MSG_REG_OK:
@@ -889,14 +898,17 @@ static void auth_msg_callback(iWAuint32 msg, void *data)
         iWA_Auth_DoAuthSample();
 }
 
+#define _AUTH_USERNAME_        "LOUHAO"
+#define _AUTH_PASSWORD_        "LOUHAO"
 
 iWAbool iWA_Auth_DoAuthSample(void)
 {
-    return iWA_Auth_DoAuth(_SERVER_IP_, 3724, "LOUHAO2", "LOUHAO2", (void*)auth_msg_callback);
+    return iWA_Auth_DoAuth(_SERVER_IP_, 3724, _AUTH_USERNAME_, _AUTH_PASSWORD_, (void*)auth_msg_callback);
 }
 
 iWAbool iWA_Auth_DoRegSample(void)
 {
-    return iWA_Auth_DoReg(_SERVER_IP_, 3724, "LOUHAO2", "LOUHAO2", (void*)auth_msg_callback);
+    return iWA_Auth_DoReg(_SERVER_IP_, 3724, _AUTH_USERNAME_, _AUTH_PASSWORD_, (void*)auth_msg_callback);
 }
+
 
