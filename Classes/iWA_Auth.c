@@ -564,10 +564,10 @@ static iWAbool read_realm_list_server_packet(void)
         server->port = realm->port;
         server->character_num = realm->characters;
         
-        server->character_class = 10;
+        server->character_grade = 10;
         iWA_Std_strcpy(server->character_name, "char_test1");
-        iWA_Std_strcpy(server->character_race, "douluo");
-        iWA_Std_strcpy(server->character_nation, "wuchen");
+        server->character_race = iWAenum_CHARACTER_RACE_GUISHA;
+        server->character_nation = iWAenum_CHARACTER_NATION_WUCHEN;
     }
 
     auth_info_block.server[i].region = 0;   /* set server list END flag */
@@ -898,8 +898,8 @@ static void auth_msg_callback(iWAuint32 msg, void *data)
         iWA_Auth_DoAuthSample();
 }
 
-#define _AUTH_USERNAME_        "LOUHAO"
-#define _AUTH_PASSWORD_        "LOUHAO"
+#define _AUTH_USERNAME_        "LOUHAO3"
+#define _AUTH_PASSWORD_        "LOUHAO3"
 
 iWAbool iWA_Auth_DoAuthSample(void)
 {

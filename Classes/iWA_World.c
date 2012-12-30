@@ -1017,7 +1017,7 @@ enum
 };
 
 
-typedef void (*iWApfunc_World_WorldMsgCb)(iWAuint32, void*);
+typedef void (*iWApfunc_World_WorldMsgCb)(iWAuint32 msg, iWAint32 para1, void* para2);
 
 
 static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAuint16 *cmd);
@@ -1031,7 +1031,7 @@ static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size);
 #define iWAmacro_WORLD_SEESION_INFO_KEY_SIZE             (40)
 
 #define iWAmacro_WORLD_CHARACTER_NAME_MAXIUM          (32)
-
+#define iWAmacro_WORLD_CHARACTER_NUM_MAXIUM          (10)
 
 typedef struct
 {
@@ -1045,8 +1045,8 @@ typedef struct
     iWAuint32 client_seed;
     iWAbool do_crypto;
     BIGNUM K, D;
-    iWAuint8 character_guid[8];
-    iWAuint8 character_name[iWAmacro_WORLD_CHARACTER_NAME_MAXIUM];
+    iWAstruct_Character  character[iWAmacro_WORLD_CHARACTER_NUM_MAXIUM];
+    iWAuint8 character_num;
     iWAuint8 session_valid;
 }iWAstruct_World_SessionInfoBlock;
 
@@ -1073,10 +1073,14 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len);
 static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size);
 static void handle_smsg_auth_response_packet(iWAuint8 *packet, iWAuint16 size);
 static void handle_smsg_char_enum_packet(iWAuint8 *packet, iWAuint16 size);
+static void handle_smsg_char_create_packet(iWAuint8 *packet, iWAuint16 size);
+static void handle_smsg_char_delete_packet(iWAuint8 *packet, iWAuint16 size);
 
 static iWAbool write_cmsg_auth_session_packet(void);
 static iWAbool write_cmsg_char_enum_packet(void);
 static iWAbool write_cmsg_player_login_packet(void);
+static iWAbool write_cmsg_char_create_packet(void);
+static iWAbool write_cmsg_char_delete_packet(void);
 
 
 static void enable_world_seesion(void)
@@ -1134,16 +1138,24 @@ static void handle_world_packet(void)
             write_cmsg_auth_session_packet();
             send_world_packet();
             break;
+            
         case SMSG_AUTH_RESPONSE:
             handle_smsg_auth_response_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-            write_cmsg_char_enum_packet();
-            send_world_packet();
             break;
+
         case SMSG_CHAR_ENUM:
             handle_smsg_char_enum_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
-            write_cmsg_player_login_packet();
-            send_world_packet();
             break;
+
+        case SMSG_CHAR_DELETE:
+            handle_smsg_char_delete_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
+            break;
+            
+        case SMSG_CHAR_CREATE:
+            handle_smsg_char_create_packet(session_info_block.packet+iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE, size);
+            break;  
+        
+
         default:
             iWA_Log("server packet cmd: 0x%04x", cmd);
     }    
@@ -1306,6 +1318,7 @@ static void handle_smsg_auth_challenge_packet(iWAuint8 *packet, iWAuint16 size)
 static void handle_smsg_auth_response_packet(iWAuint8 *packet, iWAuint16 size)
 {
     iWAuint8 resp;
+    iWAint32 status;
 
     iWA_Log("handle_smsg_auth_response_packet()");
 
@@ -1314,31 +1327,39 @@ static void handle_smsg_auth_response_packet(iWAuint8 *packet, iWAuint16 size)
     if(resp == AUTH_OK)
     {
         iWA_Log("auth ok");
+
+        status = iWAenum_WORLD_STATUS_OK;
     }
     else
     {
         iWA_Log("auth failed, code 0x%02x", resp);
+
+        /* close seesion */
+        disable_world_seesion();
+        iWA_Socket_DeinitSession();
+
+        status = iWAenum_WORLD_STATUS_FAIL;
     }
+
+    /* send msg */
+    if(session_info_block.func_msg_cb != NULL)    
+        ((iWApfunc_World_WorldMsgCb)session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_AUTH, status, NULL);
+    
 }
 
 
 static void handle_smsg_char_enum_packet(iWAuint8 *packet, iWAuint16 size)
 {
     iWAuint8 *p = packet;
-    iWAuint8 i, char_num;
-    iWAuint8 guid[8];
-    iWAuint8 name[iWAmacro_WORLD_CHARACTER_NAME_MAXIUM];   
-    
+    iWAuint8 i;
+    iWAstruct_Character  *character;
 
     iWA_Log("handle_smsg_char_enum_packet()");
 
-    char_num = *p;
-    p++;
+    session_info_block.character_num = *p++;
 
-    iWA_Log("character number : %d", char_num);
+    iWA_Log("character number : %d", session_info_block.character_num);
 
-    for(i = 0; i < char_num; i++)
-    {
 #if 0
         struct
         {
@@ -1371,25 +1392,127 @@ static void handle_smsg_char_enum_packet(iWAuint8 *packet, iWAuint16 size)
             uint8  first_bag_inventory_type
         }character
 #endif
+
+    for(i = 0; i < session_info_block.character_num; i++)
+    {
+        character = &session_info_block.character[i];
     
         /* read guid */
-        iWA_Std_memcpy(guid, p, 8);
+        iWA_Std_memcpy((void*)character->guid, p, 8);
         p += 8;
 
         /* read name */
-        p += iWA_Net_ReadPacketAsciiString(p, name, iWAmacro_WORLD_CHARACTER_NAME_MAXIUM);
+        p += iWA_Net_ReadPacketAsciiString(p, character->name, iWAmacro_WORLD_CHARACTER_NAME_MAXIUM);
+
+        /* read race */
+        character->race = *p++;
+
+        /* read grade */
+        character->grade = *p++;
+
+        /* read nation */
+        character->nation = *p++;     /* skip gender attribute */
+        character->nation = *p++;     /* store nation at skin attribute */
 
         /* other attribute */
-        p += 150;
+        p += 146;
 
-        iWA_Log("char%d name : %s", i+1, name);
-
-        if(i == 0)  /* store first character info into session_info_block */
-        {
-            iWA_Std_memcpy(session_info_block.character_guid, guid, 8);
-            iWA_Std_strcpy(session_info_block.character_name, name);
-        }
+        iWA_Log("character<%d> name:%s, grade:%d, race:%d, nation:%d", i+1, character->name, character->grade, character->race, character->nation);
     }
+
+    /* send msg */
+    if(session_info_block.func_msg_cb != NULL)    
+        ((iWApfunc_World_WorldMsgCb)session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_CHAR_ENUM, session_info_block.character_num, &session_info_block.character[0]);
+    
+}
+
+
+static void handle_smsg_char_create_packet(iWAuint8 *packet, iWAuint16 size)
+{
+    iWAuint8 resp;
+    iWAint32 status;
+    
+    iWA_Log("handle_smsg_char_create_packet()");
+
+    resp = packet[0];
+
+    switch(resp)
+    {
+        case CHAR_CREATE_SUCCESS:
+            iWA_Log("character create ok");
+            status = iWAenum_WORLD_STATUS_OK;
+            break;
+            
+        case CHAR_CREATE_ERROR:
+        case CHAR_CREATE_FAILED:
+        case CHAR_CREATE_NAME_IN_USE:
+        case CHAR_CREATE_DISABLED:
+        case CHAR_CREATE_PVP_TEAMS_VIOLATION:
+        case CHAR_CREATE_SERVER_LIMIT:
+        case CHAR_CREATE_ACCOUNT_LIMIT:
+
+        case CHAR_NAME_FAILURE:
+        case CHAR_NAME_NO_NAME:
+        case CHAR_NAME_TOO_SHORT:
+        case CHAR_NAME_TOO_LONG:
+        case CHAR_NAME_INVALID_CHARACTER:
+        case CHAR_NAME_MIXED_LANGUAGES:
+        case CHAR_NAME_PROFANE:
+        case CHAR_NAME_RESERVED:
+        case CHAR_NAME_INVALID_APOSTROPHE:
+        case CHAR_NAME_MULTIPLE_APOSTROPHES:
+        case CHAR_NAME_THREE_CONSECUTIVE:
+        case CHAR_NAME_INVALID_SPACE:
+        case CHAR_NAME_CONSECUTIVE_SPACES:
+            iWA_Log("character create failed, 0x%02x", resp);
+            
+            status = iWAenum_WORLD_STATUS_FAIL;
+
+            /* close seesion */
+            disable_world_seesion();
+            iWA_Socket_DeinitSession();
+            
+            break;
+    }
+
+    /* send msg */
+    if(session_info_block.func_msg_cb != NULL)    
+        ((iWApfunc_World_WorldMsgCb)session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_CHAR_CREATE, status, NULL);
+}
+
+static void handle_smsg_char_delete_packet(iWAuint8 *packet, iWAuint16 size)
+{
+    iWAuint8 resp;
+    iWAint32 status;
+
+    iWA_Log("handle_smsg_char_delete_packet()");
+
+    resp = packet[0];
+
+    switch(resp)
+    {
+        case CHAR_DELETE_SUCCESS:
+            iWA_Log("character delete ok");
+            status = iWAenum_WORLD_STATUS_OK;
+            break;
+            
+        case CHAR_DELETE_FAILED:
+            iWA_Log("character delete failed, 0x%02x", resp);
+
+            status = iWAenum_WORLD_STATUS_FAIL;
+
+            /* close seesion */
+            disable_world_seesion();
+            iWA_Socket_DeinitSession();
+
+            break;
+    }
+
+    /* send msg */
+    if(session_info_block.func_msg_cb != NULL)    
+        ((iWApfunc_World_WorldMsgCb)session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_CHAR_DELETE, status, NULL);
+
+    
 }
 
 
@@ -1445,7 +1568,60 @@ static iWAbool write_cmsg_player_login_packet(void)
     write_client_packet_header(p, 8, CMSG_PLAYER_LOGIN);
     p += iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE;
 
-    iWA_Std_memcpy(p, session_info_block.character_guid, 8);
+    iWA_Std_memcpy(p, (void*)session_info_block.character[0].guid, 8);
+    p += 8;
+
+    session_info_block.packet_len = (p - session_info_block.packet);
+
+    return 1;
+}
+
+static iWAbool write_cmsg_char_create_packet(void)
+{
+    iWAuint8 *p = session_info_block.packet;
+    iWAstruct_Character  *character = &session_info_block.character[0];
+
+    iWAuint8 char_gender = 0x00;
+    iWAuint8 char_face = 0x09;
+    iWAuint8 char_hair_style = 0x01;
+    iWAuint8 char_hari_color = 0x09;
+    iWAuint8 char_facial_hair = 0x20;
+    iWAuint8 char_outfit_id = 0x00;
+
+    iWA_Log("write_cmsg_char_create_packet()");
+
+    write_client_packet_header(p, iWA_Std_strlen(character->name)+1+9, CMSG_CHAR_CREATE);
+    p += iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE;
+
+    iWA_Std_strcpy(p, character->name);
+    p += (iWA_Std_strlen(character->name) + 1);
+
+    *p++ = character->race;
+    *p++ = character->grade;
+    *p++ = char_gender;
+    *p++ = character->nation;
+    *p++ = char_face;
+    *p++ = char_hair_style;
+    *p++ = char_hari_color;
+    *p++ = char_facial_hair;
+    *p++ = char_outfit_id;
+
+    session_info_block.packet_len = (p - session_info_block.packet);
+
+    return 1;
+}
+
+static iWAbool write_cmsg_char_delete_packet(void)
+{
+    iWAuint8 *p = session_info_block.packet;
+
+
+    iWA_Log("write_cmsg_char_delete_packet()");
+
+    write_client_packet_header(p, 8, CMSG_CHAR_DELETE);
+    p += iWAmacro_WORLD_CLIENT_PACKET_HEADER_SIZE;
+
+    iWA_Std_memcpy(p, (void*)session_info_block.character[0].guid, 8);
     p += 8;
 
     session_info_block.packet_len = (p - session_info_block.packet);
@@ -1478,7 +1654,10 @@ void iWA_World_Deinit(void)
     iWA_Std_memset((void*)&session_info_block, 0, sizeof(iWAstruct_World_SessionInfoBlock));
 }
 
-
+void iWA_World_DoReceive(void)
+{
+    if(receive_world_packet())   handle_world_packet();
+}
 
 iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb)
 {
@@ -1496,27 +1675,134 @@ iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb)
 }
 
 
-
-void iWA_World_DoReceive(void)
+iWAbool iWA_World_GetCharEnum(void)
 {
-    if(receive_world_packet())   handle_world_packet();
+    iWA_Log("iWA_World_GetCharEnum()");
+
+    write_cmsg_char_enum_packet();
+    send_world_packet();
+
+	return 1;
+}
+
+iWAbool iWA_World_CreateChar(iWAuint8 *name, iWAuint8 race, iWAuint8 nation)
+{
+    iWAstruct_Character  *character = &session_info_block.character[0];
+
+    iWA_Log("iWA_World_CreateChar()");
+
+    if(name == NULL)    return 0;
+
+    iWA_Std_strcpy(character->name, name);
+    character->race = race;
+    character->nation = nation;
+    character->grade = 1;
+
+    write_cmsg_char_create_packet();
+    send_world_packet();
+
+    return 1;
+}
+
+iWAbool iWA_World_DeleteChar(iWAuint8 *guid)
+{
+    iWAstruct_Character  *character = &session_info_block.character[0];
+
+    iWA_Log("iWA_World_DeleteChar()");
+
+    if(guid == NULL)    return 0;
+
+    iWA_Std_memcpy(session_info_block.character[0].guid, guid, 8);
+
+    write_cmsg_char_delete_packet();
+    send_world_packet();
+
+    return 1;
 }
 
 
-/****************************  iWA_Auth_DoAuth()  usage sample ***********************************/
 
-static void world_msg_callback(iWAuint32 msg, void *data)
+iWAbool iWA_World_Login(iWAuint8 *guid)
 {
+    iWA_Log("iWA_World_Login()");
+
+    if(guid == NULL)    return 0;
+
+    iWA_Std_memcpy(session_info_block.character[0].guid, guid, 8);
+
+    write_cmsg_player_login_packet();
+    send_world_packet();
+
+    return 1;
+}
+
+
+/****************************  iWA_World_Start()  usage sample ***********************************/
+
+static void world_msg_callback(iWAuint32 msg, iWAint32 para1, void *para2)
+{
+    iWAuint32 i;
+    iWAstruct_Character  *character;
+
     iWA_Log("world_msg_callback msg: 0x%02x", msg);
 
-#if 0    
     switch(msg)
     {
-        case iWAenum_AUTH_MSG_AUTH_OK:
-            iWA_Log("Pass Auth, Start Getting Server List");
+        case iWAenum_WORLD_MSG_AUTH:
+            if(para1 == iWAenum_WORLD_STATUS_OK)
+            {
+                iWA_Log("Pass Auth, Start Getting Character List");
+                iWA_World_GetCharEnum();
+            }
+            else
+            {
+                iWA_Log("Game Server Auth Fail");    
+            }
             break;
+
+        case iWAenum_WORLD_MSG_CHAR_ENUM:
+            iWA_Log("Character Num : %d", para1);
+            for(i = 0, character = (iWAstruct_Character*)para2; i < para1; i++)
+            {
+                iWA_Log("character<%d> name:%s, grade:%d, race:%d, nation:%d", i+1, character[i].name, character[i].grade, character[i].race, character[i].nation);
+            }
+            if(para1 == 0)
+            {
+                iWA_Log("Creating Character");
+                iWA_World_CreateChar("lly", iWAenum_CHARACTER_RACE_GUISHA, iWAenum_CHARACTER_NATION_WUCHEN);
+            }
+            else
+            {
+                iWA_Log("Character %s Login", character[0].name);
+                //iWA_World_Login(character[0].guid);
+                iWA_World_DeleteChar(character[0].guid);
+            }
+            break;
+            
+        case iWAenum_WORLD_MSG_CHAR_CREATE:
+            if(para1 == iWAenum_WORLD_STATUS_OK)
+            {
+                iWA_Log("Create Character OK, Refreshing Character List");
+                iWA_World_GetCharEnum();
+            }
+            else
+            {
+                iWA_Log("Create Character Fail");    
+            }
+            break;
+
+        case iWAenum_WORLD_MSG_CHAR_DELETE:
+            if(para1 == iWAenum_WORLD_STATUS_OK)
+            {
+                iWA_Log("Delete Character OK");
+            }
+            else
+            {
+                iWA_Log("Delete Character Fail");    
+            }
+            break;
+            
     }
-#endif
 }
 
 

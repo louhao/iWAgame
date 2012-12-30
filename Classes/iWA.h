@@ -44,6 +44,36 @@ typedef unsigned int       iWAbool;
 
 enum
 {
+    iWAenum_WORLD_MSG_AUTH                                =  0x00, 
+    iWAenum_WORLD_MSG_CHAR_ENUM,
+    iWAenum_WORLD_MSG_CHAR_CREATE,
+    iWAenum_WORLD_MSG_CHAR_DELETE
+};
+
+enum
+{
+    iWAenum_WORLD_STATUS_OK                    =  0x00, 
+    iWAenum_WORLD_STATUS_FAIL
+};
+
+enum
+{
+    iWAenum_CHARACTER_RACE_DOULUO    = 0,
+    iWAenum_CHARACTER_RACE_GUISHA,
+    iWAenum_CHARACTER_RACE_LINGZUN,
+    iWAenum_CHARACTER_RACE_WUHUANG
+};
+
+enum
+{
+    iWAenum_CHARACTER_NATION_HAOTIAN    = 0,
+    iWAenum_CHARACTER_NATION_WUCHEN,
+    iWAenum_CHARACTER_NATION_CANGHAI
+};
+
+
+enum
+{
     iWAenum_AUTH_MSG_AUTH_OK                                         = 0x00,
     iWAenum_AUTH_MSG_AUTH_CONNECT_ERROR                   = 0x01,
     iWAenum_AUTH_MSG_AUTH_INVALID_USERNAME                = 0x02,
@@ -68,8 +98,8 @@ enum
 #define iWAmacro_AUTH_SERVER_HIT_SIZE             (32)
 
 #define iWAmacro_WORLD_CHARACTER_NAME_SIZE     (32)
-#define iWAmacro_WORLD_CHARACTER_RACE_SIZE     (20)
-#define iWAmacro_WORLD_CHARACTER_NATION_SIZE   (20)
+//#define iWAmacro_WORLD_CHARACTER_RACE_SIZE     (20)
+//#define iWAmacro_WORLD_CHARACTER_NATION_SIZE   (20)
 
 typedef struct
 {
@@ -80,11 +110,20 @@ typedef struct
     iWAuint8     address[iWAmacro_AUTH_SERVER_ADDRESS_SIZE];
     iWAuint16   port;
     iWAuint16   character_num;
-    iWAuint16   character_class;    
+    iWAuint16   character_grade;    
+    iWAuint8     character_race;
+    iWAuint8     character_nation;    
     iWAuint8     character_name[iWAmacro_WORLD_CHARACTER_NAME_SIZE];
-    iWAuint8     character_race[iWAmacro_WORLD_CHARACTER_RACE_SIZE];
-    iWAuint8     character_nation[iWAmacro_WORLD_CHARACTER_NATION_SIZE];
 }iWAstruct_Auth_Server;
+
+typedef struct
+{
+    iWAuint8     guid[8];
+    iWAuint8     name[iWAmacro_WORLD_CHARACTER_NAME_SIZE];
+    iWAuint16   grade;    
+    iWAuint8     race;
+    iWAuint8     nation;
+}iWAstruct_Character;
 
 
 extern void iWA_Log(const iWAint8 *pszFormat, ...);
@@ -125,8 +164,12 @@ extern iWAbool iWA_Auth_DoRegSample(void);
 
 extern void iWA_World_Init(void);
 extern void iWA_World_Deinit(void);
-extern iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb);
 extern void iWA_World_DoReceive(void);
+extern iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb);
+extern iWAbool iWA_World_GetCharEnum(void);
+extern iWAbool iWA_World_CreateChar(iWAuint8 *name, iWAuint8 race, iWAuint8 nation);
+extern iWAbool iWA_World_DeleteChar(iWAuint8 *guid);
+extern iWAbool iWA_World_Login(iWAuint8 *guid);
 extern iWAbool iWA_World_StartSample(iWAuint8 *server, iWAuint16 port);
 
 extern iWAbool iWA_Socket_InitSession(iWAuint8 *ip, iWAuint16 port, iWAuint32 send_buf_size, iWAuint32 recv_buf_size, void *func_split, iWAuint32 split_size, void *func_decrypt);
