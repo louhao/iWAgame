@@ -539,6 +539,7 @@ static iWAbool read_realm_list_server_packet(void)
 
         realm->characters = *p++;
         realm->timezone = *p++;
+        p++; /* skip unknown byte */
 
         /* parse port from address */
         c = realm->address;

@@ -14,7 +14,9 @@
 #include "bn/bn.h"
 #include "bn/sha1.h"
 
-//#define _iWA_CLIENT_              1
+#include "iwaserver.pb-c.h"
+
+#define _iWA_CLIENT_              1
 #define _SERVER_IP_    "127.0.0.1"
 //#define _SERVER_IP_    "192.168.10.107"
 //#define _SERVER_IP_    "192.168.1.6" 
@@ -40,6 +42,15 @@ typedef unsigned int       iWAbool;
 #define iWA_Std_strcpy      strcpy
 #define iWA_Std_strcmp      strcmp
 #define iWA_Std_atoi          atoi 
+
+
+enum
+{
+    iWAenum_AUTH_CMD_LOGON        = 0x00,
+    iWAenum_AUTH_CMD_REG            = 0x01,
+    iWAenum_AUTH_CMD_PROOF    = 0x02,
+    iWAenum_AUTH_CMD_SERVER_LIST       = 0x03,
+};
 
 
 enum
