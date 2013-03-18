@@ -14,7 +14,8 @@
 #include "bn/bn.h"
 #include "bn/sha1.h"
 
-#include "iwaserver.pb-c.h"
+#include "iwa_authserver.pb-c.h"
+#include "iwa_gameserver.pb-c.h"
 
 #define _iWA_CLIENT_              1
 #define _SERVER_IP_    "127.0.0.1"
@@ -46,10 +47,21 @@ typedef unsigned int       iWAbool;
 
 enum
 {
-    iWAenum_AUTH_CMD_LOGON        = 0x00,
-    iWAenum_AUTH_CMD_REG            = 0x01,
+    iWAenum_AUTH_CMD_REG            = 0x00,
+    iWAenum_AUTH_CMD_LOGON        = 0x01,
     iWAenum_AUTH_CMD_PROOF    = 0x02,
     iWAenum_AUTH_CMD_SERVER_LIST       = 0x03,
+};
+
+enum
+{
+    iWAenum_GAME_CMD_AUTH_CHANLLEGE        = 0x00,
+    iWAenum_GAME_CMD_AUTH_SEESION            = 0x01,
+    iWAenum_GAME_CMD_AUTH_RESPONSE          = 0x02,
+    iWAenum_GAME_CMD_CHAR_ENUM       = 0x03,
+    iWAenum_GAME_CMD_CHAR_CREATE       = 0x04,
+    iWAenum_GAME_CMD_CHAR_DELETE       = 0x05,
+    iWAenum_GAME_CMD_PLAYER_LOGIN       = 0x06,    
 };
 
 
@@ -129,7 +141,7 @@ typedef struct
 
 typedef struct
 {
-    iWAuint8     guid[8];
+    iWAuint32     cid;
     iWAuint8     name[iWAmacro_WORLD_CHARACTER_NAME_SIZE];
     iWAuint16   grade;    
     iWAuint8     race;
@@ -179,8 +191,8 @@ extern void iWA_World_DoReceive(void);
 extern iWAbool iWA_World_Start(iWAuint8 *server, iWAuint16 port, void *msg_cb);
 extern iWAbool iWA_World_GetCharEnum(void);
 extern iWAbool iWA_World_CreateChar(iWAuint8 *name, iWAuint8 race, iWAuint8 nation);
-extern iWAbool iWA_World_DeleteChar(iWAuint8 *guid);
-extern iWAbool iWA_World_Login(iWAuint8 *guid);
+extern iWAbool iWA_World_DeleteChar(iWAuint32 cid);
+extern iWAbool iWA_World_Login(iWAuint32 cid);
 extern iWAbool iWA_World_StartSample(iWAuint8 *server, iWAuint16 port);
 
 extern iWAbool iWA_Socket_InitSession(iWAuint8 *ip, iWAuint16 port, iWAuint32 send_buf_size, iWAuint32 recv_buf_size, void *func_split, iWAuint32 split_size, void *func_decrypt);

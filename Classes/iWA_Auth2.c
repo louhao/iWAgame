@@ -34,6 +34,7 @@ typedef struct
 
 
 static iWAstruct_Auth_AuthInfoBlock auth_info_block = {0};
+static iWAint8 bn_to_hex_buf[512];
 
 static void print_auth_info_block(void);
 
@@ -55,7 +56,8 @@ static iWAbool write_proof_client_packet(void);
 static iWAbool read_proof_server_packet(void);
 static iWAbool write_server_list_client_packet(void);
 static iWAbool read_server_list_server_packet(void);
-
+static iWAint8* bn_to_hex(BIGNUM *bn);   /* BN_bn2hex NOT release memory, using this alternative */
+static void calculate_password_hash(iWAint8 *username, iWAint8 *password, BIGNUM *hash);
 static iWAbool calculate_client_SRP_value(void);
 
 
@@ -113,7 +115,7 @@ static void handle_auth_packet(void)
     switch(cmd)
     {
         case iWAenum_AUTH_CMD_LOGON:
-            if(read_logon_server_packet() == I_WASERVER_AUTH__LOG_REG_SERVER__RESULT_CODE__OK)
+            if(read_logon_server_packet() == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
             {
                 calculate_client_SRP_value();
                 write_proof_client_packet();
@@ -122,7 +124,7 @@ static void handle_auth_packet(void)
             break;
             
         case iWAenum_AUTH_CMD_PROOF:
-            if(read_proof_server_packet() == I_WASERVER_AUTH__PROOF_SERVER__RESULT_CODE__OK)
+            if(read_proof_server_packet() == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
             {
                 /* send msg  iWAenum_AUTH_MSG_AUTH_OK */
                 if(auth_info_block.func_auth_msg_cb != NULL)    
@@ -162,7 +164,7 @@ static void handle_auth_packet(void)
             {
                 switch(ret)
                 {
-                    case I_WASERVER_AUTH__LOG_REG_SERVER__RESULT_CODE__OK:
+                    case I_WASERVER_AUTH__RESULT_CODE__SUCCESS:
                         msg = iWAenum_AUTH_MSG_REG_OK;
                         break;
                     default:
@@ -187,16 +189,16 @@ static void print_auth_info_block(void)
     iWA_Log("username : %s", auth_info_block.username);    
     iWA_Log("password : %s", auth_info_block.password);    
 
-    iWA_Log("B : %s", BN_bn2hex(&auth_info_block.B));
-    iWA_Log("g : %s", BN_bn2hex(&auth_info_block.g));
-    iWA_Log("N : %s", BN_bn2hex(&auth_info_block.N));    
-    iWA_Log("s : %s", BN_bn2hex(&auth_info_block.s));
-    iWA_Log("M2 : %s", BN_bn2hex(&auth_info_block.M2));    
-    iWA_Log("a : %s", BN_bn2hex(&auth_info_block.a));
-    iWA_Log("A : %s", BN_bn2hex(&auth_info_block.A));    
-    iWA_Log("S : %s", BN_bn2hex(&auth_info_block.S));
-    iWA_Log("K : %s", BN_bn2hex(&auth_info_block.K));
-    iWA_Log("M1 : %s", BN_bn2hex(&auth_info_block.M1)); 
+    iWA_Log("B : %s", bn_to_hex(&auth_info_block.B));
+    iWA_Log("g : %s", bn_to_hex(&auth_info_block.g));
+    iWA_Log("N : %s", bn_to_hex(&auth_info_block.N));    
+    iWA_Log("s : %s", bn_to_hex(&auth_info_block.s));
+    iWA_Log("M2 : %s", bn_to_hex(&auth_info_block.M2));    
+    iWA_Log("a : %s", bn_to_hex(&auth_info_block.a));
+    iWA_Log("A : %s", bn_to_hex(&auth_info_block.A));    
+    iWA_Log("S : %s", bn_to_hex(&auth_info_block.S));
+    iWA_Log("K : %s", bn_to_hex(&auth_info_block.K));
+    iWA_Log("M1 : %s", bn_to_hex(&auth_info_block.M1)); 
 
     iWA_Log("server_num : %d", auth_info_block.server_num);
 
@@ -227,12 +229,17 @@ static iWAbool write_logreg_client_packet(iWAbool is_reg)
 {
     IWAserverAuth__LogRegClient logreg;
     iWAuint8 *p = auth_info_block.packet;
+    BIGNUM H;
 
     iWA_Log("write_logreg_client_packet(%d)", is_reg);
 
     i_waserver_auth__log_reg_client__init(&logreg);
 
+#if   _iWA_CLIENT_
+    logreg.gamename = "iWA";
+#else
     logreg.gamename = "iWA1";
+#endif
     logreg.version1 = 0;
     logreg.version2 = 0;
     logreg.version3 = 1;
@@ -254,8 +261,14 @@ static iWAbool write_logreg_client_packet(iWAbool is_reg)
     logreg.country = "enUS";
     logreg.timezone_bias = 0; 
     logreg.username = auth_info_block.username;
-    logreg.password = is_reg ? auth_info_block.password : NULL;
 
+
+    if(is_reg)
+    {
+        BN_init(&H);    
+        calculate_password_hash(auth_info_block.username, auth_info_block.password, &H);
+        logreg.password_hash = bn_to_hex(&H);
+    }
     auth_info_block.packet_len = i_waserver_auth__log_reg_client__pack(&logreg, p+4);
     iWA_Net_WritePacketUint16(p, auth_info_block.packet_len);
     iWA_Net_WritePacketUint16(p+2, is_reg ? iWAenum_AUTH_CMD_REG : iWAenum_AUTH_CMD_LOGON);
@@ -277,12 +290,12 @@ static iWAuint32 read_logon_server_packet(void)
     logreg = i_waserver_auth__log_reg_server__unpack(NULL, len, p+4);
     result = (iWAuint32)logreg->result;   
 
-    if(logreg->result == I_WASERVER_AUTH__LOG_REG_SERVER__RESULT_CODE__OK)
+    if(logreg->result == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
     {
-        iWA_Net_ReadPacketBigNumber(logreg->b.data, logreg->b.len, &(auth_info_block.B)); 
-        iWA_Net_ReadPacketBigNumber(logreg->g.data, logreg->g.len, &(auth_info_block.g)); 
-        iWA_Net_ReadPacketBigNumber(logreg->n.data, logreg->n.len, &(auth_info_block.N)); 
-        iWA_Net_ReadPacketBigNumber(logreg->s.data, logreg->s.len, &(auth_info_block.s)); 
+        if(logreg->has_b)   iWA_Net_ReadPacketBigNumber(logreg->b.data, logreg->b.len, &(auth_info_block.B)); 
+        if(logreg->has_g)   iWA_Net_ReadPacketBigNumber(logreg->g.data, logreg->g.len, &(auth_info_block.g)); 
+        if(logreg->has_n)   iWA_Net_ReadPacketBigNumber(logreg->n.data, logreg->n.len, &(auth_info_block.N)); 
+        if(logreg->has_s)   iWA_Net_ReadPacketBigNumber(logreg->s.data, logreg->s.len, &(auth_info_block.s)); 
     }
     
     i_waserver_auth__log_reg_server__free_unpacked(logreg, NULL);
@@ -352,7 +365,7 @@ static iWAbool read_proof_server_packet(void)
     proof = i_waserver_auth__proof_server__unpack(NULL, len, p+4);
     result = proof->result;
 
-    iWA_Net_ReadPacketBigNumber(proof->m2.data, proof->m2.len, &(auth_info_block.M2)); 
+  //  iWA_Net_ReadPacketBigNumber(proof->m2.data, proof->m2.len, &(auth_info_block.M2)); 
 
     i_waserver_auth__proof_server__free_unpacked(proof, NULL);
 
@@ -404,6 +417,7 @@ static iWAbool read_server_list_server_packet(void)
         server->region = svr->region;
         server->status = svr->status;
         iWA_Std_strcpy(server->name, svr->name);
+        if(svr->hit != NULL)    iWA_Std_strcpy(server->hit, svr->hit);
         iWA_Std_strcpy(server->address, svr->address);
         server->port = svr->port;
 
@@ -427,9 +441,61 @@ static iWAbool read_server_list_server_packet(void)
     return 1;
 }
 
+#if 0
+static iWAint8* bn_to_hex(BIGNUM *bn)   /* BN_bn2hex NOT release memory, using this alternative */
+{
+    static const iWAint8 hex[]="0123456789ABCDEF";
+    iWAuint8 bin[250];
+    iWAint32 len, i;
 
+    len = BN_bn2bin(bn, bin);
+    for(i = 0; i < len; i++)
+    {
+        bn_to_hex_buf[i*2] = hex[bin[i] >> 4];
+        bn_to_hex_buf[i*2 + 1] = hex[bin[i] & 0x0f];
+    }
+    bn_to_hex_buf[i*2] = 0x00;
 
+    return bn_to_hex_buf;
+}
+#endif
 
+static iWAint8* bn_to_hex(BIGNUM *bn)   /* BN_bn2hex NOT release memory, using this alternative */
+{
+    iWAint32 i,j,v,z=0;
+    iWAint8 *p;
+    static const iWAint8 hex[]="0123456789ABCDEF";
+    iWAint32 len;
+    p = bn_to_hex_buf;
+    if (bn->neg)    *(p++) = '-';
+    if (BN_is_zero(bn))     *(p++) = '0';
+    for (i = bn->top - 1; i >= 0; i--)
+    {
+        for (j = BN_BITS2 - 8; j >= 0; j -= 8)
+        {
+            /* strip leading zeros */
+            v = ((iWAint32)(bn->d[i] >> j)) & 0xff;
+            if (z || (v != 0))
+            {
+                *(p++) = hex[v >> 4];
+                *(p++) = hex[v & 0x0f];
+                z = 1;
+            }
+        }
+    }
+    *p = 0x00;
+    return bn_to_hex_buf;
+}
+static void calculate_password_hash(iWAint8 *username, iWAint8 *password, BIGNUM *hash)
+{
+    SHA1Context sha_ctx;    
+    /* calculate H(username:password) */
+    SHA1Reset(&sha_ctx);
+    SHA1Input(&sha_ctx, username, iWA_Std_strlen(username));
+    SHA1Input(&sha_ctx, ":", 1);
+    SHA1Input(&sha_ctx, password, iWA_Std_strlen(password));    
+    iWA_Crypto_Sha1ResultBigNumber(&sha_ctx, hash);
+}
 
 static iWAbool calculate_client_SRP_value(void)
 {
@@ -479,11 +545,14 @@ static iWAbool calculate_client_SRP_value(void)
     iWA_Crypto_Sha1ResultBigNumber(sha_ctx, I);
 
     /* p = H(username:password) */
+    calculate_password_hash(auth_info_block.username, auth_info_block.password, p);
+#if 0
     SHA1Reset(sha_ctx);
     SHA1Input(sha_ctx, auth_info_block.username, iWA_Std_strlen(auth_info_block.username));
     SHA1Input(sha_ctx, ":", 1);
     SHA1Input(sha_ctx, auth_info_block.password, iWA_Std_strlen(auth_info_block.password));    
     iWA_Crypto_Sha1ResultBigNumber(sha_ctx, p);
+#endif
 
     /* u = H(A, B) */
     iWA_Crypto_Sha1HashBigNumbers(sha_ctx, u, &auth_info_block.A, &auth_info_block.B, NULL);
@@ -532,19 +601,19 @@ static iWAbool calculate_client_SRP_value(void)
 #if 1    
     iWA_Log("username: %s", auth_info_block.username);
     iWA_Log("password: %s", auth_info_block.password);
-    iWA_Log("I = H(username) : %s", BN_bn2hex(I));
-    iWA_Log("p = H(username:password) : %s", BN_bn2hex(p));
-    iWA_Log("g (received from server) : %s", BN_bn2hex(&auth_info_block.g));
-    iWA_Log("N (received from server) : %s", BN_bn2hex(&auth_info_block.N));    
-    iWA_Log("a = random 32 bytes : %s", BN_bn2hex(&auth_info_block.a));
-    iWA_Log("A = g^a % N : %s", BN_bn2hex(&auth_info_block.A));
-    iWA_Log("B (received from server) : %s", BN_bn2hex(&auth_info_block.B));
-    iWA_Log("u = H(A, B) : %s", BN_bn2hex(u));
-    iWA_Log("s (received from server) : %s", BN_bn2hex(&auth_info_block.s));
-    iWA_Log("x = H(s, p) : %s", BN_bn2hex(x));
-    iWA_Log("S = (B - k*(g^x%N)) ^ (a + u*x) % N : %s", BN_bn2hex(&auth_info_block.S));
-    iWA_Log("K = H_interleave(S) : %s", BN_bn2hex(&auth_info_block.K));
-    iWA_Log("M1 = H(H(N) xor H(g), I, s, A, B, K) : %s", BN_bn2hex(&auth_info_block.M1));
+    iWA_Log("I = H(username) : %s", bn_to_hex(I));
+    iWA_Log("p = H(username:password) : %s", bn_to_hex(p));
+    iWA_Log("g (received from server) : %s", bn_to_hex(&auth_info_block.g));
+    iWA_Log("N (received from server) : %s", bn_to_hex(&auth_info_block.N));    
+    iWA_Log("a = random 32 bytes : %s", bn_to_hex(&auth_info_block.a));
+    iWA_Log("A = g^a % N : %s", bn_to_hex(&auth_info_block.A));
+    iWA_Log("B (received from server) : %s", bn_to_hex(&auth_info_block.B));
+    iWA_Log("u = H(A, B) : %s", bn_to_hex(u));
+    iWA_Log("s (received from server) : %s", bn_to_hex(&auth_info_block.s));
+    iWA_Log("x = H(s, p) : %s", bn_to_hex(x));
+    iWA_Log("S = (B - k*(g^x%N)) ^ (a + u*x) % N : %s", bn_to_hex(&auth_info_block.S));
+    iWA_Log("K = H_interleave(S) : %s", bn_to_hex(&auth_info_block.K));
+    iWA_Log("M1 = H(H(N) xor H(g), I, s, A, B, K) : %s", bn_to_hex(&auth_info_block.M1));
 #endif
 
 end:

@@ -1168,11 +1168,11 @@ static iWAbool read_server_packet_header(iWAuint8* packet, iWAuint16 *size, iWAu
     iWAuint32 t;
     iWAuint8 x;
 
-    iWA_Log("read_server_packet_header()");
+    //iWA_Log("read_server_packet_header()");
 
     if(packet == NULL || size == NULL || cmd == NULL)     return 0;
 
-    iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
+    //iWA_Dump(packet, iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE);
 
     *size = (((iWAuint16)packet[0] << 8) |(iWAuint16)packet[1]) - 2;
     *cmd = iWA_Net_ReadPacketUint16(packet+2);
@@ -1185,7 +1185,7 @@ static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint
     iWAuint32 t;
     iWAuint8 x;
 
-    iWA_Log("write_client_packet_header()");
+    //iWA_Log("write_client_packet_header()");
 
     if(packet == NULL)     return;
 
@@ -1219,7 +1219,7 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
     iWAuint16 size, cmd;
     iWAuint8 recv_i, recv_j;
 
-    iWA_Log("split_world_packet()");
+    //iWA_Log("split_world_packet()");
 
     if(pkt == NULL || len < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE)   return 0;
 
@@ -1260,7 +1260,7 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len)
     iWAuint32 t;
     iWAuint8 x;
 
-    iWA_Log("decrypt_world_packet()");
+    //iWA_Log("decrypt_world_packet()");
 
     if(pkt == NULL || len < iWAmacro_WORLD_SERVER_PACKET_HEADER_SIZE)   return;
 

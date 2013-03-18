@@ -20,7 +20,8 @@ extern "C" int iWA_Auth_DoReg(char *server, short port, char *username, char *pa
 extern "C" int iWA_Auth_DoAuthSample(void);
 extern "C" int iWA_Auth_DoRegSample(void);
 extern "C" void iWA_World_DoReceive(void);
-
+extern "C" int iWA_World_StartSample(char *server, unsigned short port);
+extern "C" void iWA_World_Init(void);
 
 class CCSocket : public CCObject
 {
@@ -86,9 +87,9 @@ bool AppDelegate::applicationDidFinishLaunching()
     CCSocket *soc = new CCSocket();
 
     iWA_Auth_Init();
-    iWA_Auth_DoRegSample();
-    //iWA_Auth_DoAuthSample();
-
+  // iWA_Auth_DoRegSample();
+    iWA_Auth_DoAuthSample();
+   iWA_World_Init();
     return 1;
 #endif
 
