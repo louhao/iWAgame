@@ -17,7 +17,7 @@
 #include "iwa_authserver.pb-c.h"
 #include "iwa_gameserver.pb-c.h"
 
-#define _iWA_CLIENT_              1
+#define _iWA_CLIENT_              0
 #define _SERVER_IP_    "127.0.0.1"
 //#define _SERVER_IP_    "192.168.10.107"
 //#define _SERVER_IP_    "192.168.1.6" 

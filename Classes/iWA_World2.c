@@ -549,7 +549,7 @@ void iWA_World_Init(void)
 
     iWA_Std_memset((void*)&world_session_info_block, 0, sizeof(iWAstruct_World_SessionInfoBlock));
 
-#if 0
+#if 1
     iWA_Std_strcpy(world_session_info_block.username, iWA_Auth_GetUsername());
 
     BN_copy(&world_session_info_block.K, iWA_Auth_GetK());

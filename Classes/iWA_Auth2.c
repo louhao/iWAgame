@@ -739,9 +739,6 @@ static void auth_msg_callback(iWAuint32 cmd, iWAint32 para1, void *para2)
             if(para1 == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
             {
                 iWA_Log("Register user success");
-#if 0
-                iWA_Auth_DoAuthSample();
-#endif
             }
             else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNPACK_MESSAGE_ERROR)
             {
@@ -771,6 +768,9 @@ static void auth_msg_callback(iWAuint32 cmd, iWAint32 para1, void *para2)
             {
                 iWA_Log("Register user fail, unknown error");
             }
+#if 1
+                iWA_Auth_DoAuthSample();
+#endif
             break;
         case iWAenum_AUTH_CMD_LOGON:
             if(para1 == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
@@ -846,7 +846,7 @@ static void auth_msg_callback(iWAuint32 cmd, iWAint32 para1, void *para2)
                 ++server;
             }
 
-#if 0
+#if 1
             /* connect first game server */
                 server = (iWAstruct_Auth_Server*)para2;
                 if(server->sid > 0)

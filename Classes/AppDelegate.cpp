@@ -87,13 +87,8 @@ bool AppDelegate::applicationDidFinishLaunching()
     CCSocket *soc = new CCSocket();
 
     iWA_Auth_Init();
-#if 0    
-   //iWA_Auth_DoRegSample();
-   iWA_Auth_DoAuthSample();
-#else  
-   	iWA_World_Init();
-	iWA_World_StartSample("127.0.0.1", 3728);
-#endif
+    iWA_Auth_DoRegSample();
+
     return 1;
 #endif
 
