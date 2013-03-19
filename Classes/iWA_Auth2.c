@@ -5,14 +5,14 @@
 
 
 
-typedef void (*iWApfunc_Auth_AuthMsgCb)(iWAuint32, void*);
+typedef void (*iWApfunc_Auth_AuthMsgCb)(iWAuint32, iWAint32, void*);
 
 
 #define iWAmacro_AUTH_INFO_USERNAME_MAXIUM             (32)
 #define iWAmacro_AUTH_INFO_PASSWORD_MAXIUM            (32)
 
 #define iWAmacro_AUTH_INFO_PACKET_MAXIUM                  (1024)
-#define iWAmacro_AUTH_INFO_REALM_MAXIUM                   (5*10)
+#define iWAmacro_AUTH_INFO_REALM_MAXIUM                   (5*10 + 1)
 
 
 
@@ -30,11 +30,12 @@ typedef struct
     BIGNUM a, A, S, K, M1;  /* generate at client */
     iWAuint16 server_num;   
     iWAstruct_Auth_Server  server[iWAmacro_AUTH_INFO_REALM_MAXIUM];
+    iWAint8 bn_to_hex_buf[512];
 }iWAstruct_Auth_AuthInfoBlock;
 
 
 static iWAstruct_Auth_AuthInfoBlock auth_info_block = {0};
-static iWAint8 bn_to_hex_buf[512];
+
 
 static void print_auth_info_block(void);
 
@@ -46,16 +47,15 @@ static iWAuint32 split_auth_packet(iWAuint8 *pkt, iWAuint32 len);
 static iWAbool send_auth_packet(void);
 static iWAbool receive_auth_packet(void);
 static void handle_auth_packet(void);
-
+static void handle_logon_server_packet(void);
+static void handle_reg_server_packet(void);
+static void handle_proof_server_packet(void);
+static void handle_server_list_server_packet(void);
 static iWAbool write_logon_client_packet(void);
 static iWAbool write_reg_client_packet(void);
 static iWAbool write_logreg_client_packet(iWAbool is_reg);
-static iWAuint32 read_logon_server_packet(void);
-static iWAuint32 read_reg_server_packet(void);
 static iWAbool write_proof_client_packet(void);
-static iWAbool read_proof_server_packet(void);
 static iWAbool write_server_list_client_packet(void);
-static iWAbool read_server_list_server_packet(void);
 static iWAint8* bn_to_hex(BIGNUM *bn);   /* BN_bn2hex NOT release memory, using this alternative */
 static void calculate_password_hash(iWAint8 *username, iWAint8 *password, BIGNUM *hash);
 static iWAbool calculate_client_SRP_value(void);
@@ -114,68 +114,39 @@ static void handle_auth_packet(void)
     
     switch(cmd)
     {
+        case iWAenum_AUTH_CMD_REG:
+            handle_reg_server_packet();
+            break;
         case iWAenum_AUTH_CMD_LOGON:
-            if(read_logon_server_packet() == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
-            {
-                calculate_client_SRP_value();
-                write_proof_client_packet();
-                send_auth_packet();
-            }    
+            handle_logon_server_packet();
             break;
             
         case iWAenum_AUTH_CMD_PROOF:
-            if(read_proof_server_packet() == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
-            {
                 /* send msg  iWAenum_AUTH_MSG_AUTH_OK */
-                if(auth_info_block.func_auth_msg_cb != NULL)    
-                    ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_MSG_AUTH_OK, NULL);
 
                 /* retrieve server list */     
-                write_server_list_client_packet();
-                send_auth_packet();
-            }
+            handle_proof_server_packet();
             break;
             
         case iWAenum_AUTH_CMD_SERVER_LIST:
             /* read list */
-            read_server_list_server_packet();
-            print_auth_info_block();
+            handle_server_list_server_packet();
 
             /* close seesion */
-            disable_auth_seesion();
-            iWA_Socket_DeinitSession();
             //iWA_World_InitSessionInfoBlock();
 
             /* send msg iWAenum_AUTH_MSG_AUTH_SERVER_LIST */
-            if(auth_info_block.func_auth_msg_cb != NULL)    
-                ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_MSG_AUTH_SERVER_LIST, (void*)&auth_info_block.server[0]);
 
             break;       
             
-        case iWAenum_AUTH_CMD_REG:
-            ret = read_reg_server_packet();
             
             /* close seesion */
-            disable_auth_seesion();
-            iWA_Socket_DeinitSession();
 
             /* send msg */
-            if(auth_info_block.func_reg_msg_cb != NULL) 
-            {
-                switch(ret)
-                {
-                    case I_WASERVER_AUTH__RESULT_CODE__SUCCESS:
-                        msg = iWAenum_AUTH_MSG_REG_OK;
-                        break;
                     default:
-                        msg = iWAenum_AUTH_MSG_REG_CREATE_FAIL;
-                        break;
-                }
+            iWA_Log("server packet cmd: 0x%04x", cmd);
 
-                ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_reg_msg_cb)(msg, NULL);
-            }
             
-            break;
     }
 }
 
@@ -210,6 +181,126 @@ static void print_auth_info_block(void)
 }
 
 
+static void handle_reg_server_packet(void)
+{
+    IWAserverAuth__LogRegServer  *logreg;
+    iWAuint8 *p = auth_info_block.packet;
+    iWAuint16 len;
+    iWAuint32 result;
+    iWA_Log("handle_reg_server_packet()");
+    len = iWA_Net_ReadPacketUint16(p);
+    logreg = i_waserver_auth__log_reg_server__unpack(NULL, len, p+4);
+    result = (iWAuint32)logreg->result;   
+    i_waserver_auth__log_reg_server__free_unpacked(logreg, NULL);
+    disable_auth_seesion();
+    iWA_Socket_DeinitSession();
+    if(auth_info_block.func_reg_msg_cb != NULL) 
+        ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_reg_msg_cb)(iWAenum_AUTH_CMD_REG, result, NULL);
+}
+static void handle_logon_server_packet(void)
+{
+    IWAserverAuth__LogRegServer  *logreg;
+    iWAuint8 *p = auth_info_block.packet;
+    iWAuint16 len;
+    iWAuint32 result;
+    iWA_Log("handle_logon_server_packet()");
+    len = iWA_Net_ReadPacketUint16(p);
+    logreg = i_waserver_auth__log_reg_server__unpack(NULL, len, p+4);
+    result = (iWAuint32)logreg->result;   
+    if(logreg->result == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+    {
+        if(logreg->has_b)   iWA_Net_ReadPacketBigNumber(logreg->b.data, logreg->b.len, &(auth_info_block.B)); 
+        if(logreg->has_g)   iWA_Net_ReadPacketBigNumber(logreg->g.data, logreg->g.len, &(auth_info_block.g)); 
+        if(logreg->has_n)   iWA_Net_ReadPacketBigNumber(logreg->n.data, logreg->n.len, &(auth_info_block.N)); 
+        if(logreg->has_s)   iWA_Net_ReadPacketBigNumber(logreg->s.data, logreg->s.len, &(auth_info_block.s)); 
+        calculate_client_SRP_value();
+        write_proof_client_packet();
+        send_auth_packet();
+    }
+    i_waserver_auth__log_reg_server__free_unpacked(logreg, NULL);
+    if(auth_info_block.func_auth_msg_cb != NULL)    
+        ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_CMD_LOGON, result, NULL);         
+}
+static void handle_proof_server_packet(void)
+{
+    IWAserverAuth__ProofServer *proof;
+    iWAuint8 *p = auth_info_block.packet;
+    iWAuint16 len;
+    iWAuint32 result;
+    iWA_Log("handle_proof_server_packet()");
+    len = iWA_Net_ReadPacketUint16(p);
+    proof = i_waserver_auth__proof_server__unpack(NULL, len, p+4);
+    result = proof->result;
+    i_waserver_auth__proof_server__free_unpacked(proof, NULL);
+    if(result == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+    {
+        if(auth_info_block.func_auth_msg_cb != NULL)    
+            ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_CMD_PROOF, result, NULL);
+        write_server_list_client_packet();
+        send_auth_packet();
+    }
+    else
+    {
+        disable_auth_seesion();
+        iWA_Socket_DeinitSession();     
+        if(auth_info_block.func_auth_msg_cb != NULL)    
+            ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_CMD_PROOF, result, NULL);
+    }
+}
+static void handle_server_list_server_packet(void)
+{
+    IWAserverAuth__ServerListServer *list;
+    IWAserverAuth__ServerListServer__Server *svr;
+    IWAserverAuth__ServerListServer__Server__Character *chr;
+    iWAuint8 *p = auth_info_block.packet;
+    iWAuint16 len;
+    iWAuint16 i, j;
+    iWAstruct_Auth_Server *server;
+    iWAuint32 result;
+    iWA_Log("handle_server_list_server_packet()");
+    len = iWA_Net_ReadPacketUint16(p);
+    list = i_waserver_auth__server_list_server__unpack(NULL, len, p+4);
+    result = list->result;
+    if(result == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+    {
+        auth_info_block.server_num = (iWAuint16)((list->n_servers) < iWAmacro_AUTH_INFO_REALM_MAXIUM ? (list->n_servers) : (iWAmacro_AUTH_INFO_REALM_MAXIUM -1));
+        for(i = 0; i < auth_info_block.server_num; i++)
+        {
+            svr = list->servers[i];
+            server = &auth_info_block.server[i];
+            iWA_Std_memset((void*)server, 0, sizeof(iWAstruct_Auth_Server));
+            server->sid = svr->sid;
+            server->region = svr->region;
+            server->status = svr->status;
+            iWA_Std_strcpy(server->name, svr->name);
+            if(svr->hit != NULL)    iWA_Std_strcpy(server->hit, svr->hit);
+            iWA_Std_strcpy(server->address, svr->address);
+            server->port = svr->port;
+            server->character_num = (svr->n_characters) < iWAmacro_WORLD_CHARACTER_NUM_MAXIUM ? (svr->n_characters) : (iWAmacro_WORLD_CHARACTER_NUM_MAXIUM - 1);
+            for(j = 0; j < svr->n_characters; j++)
+            {
+                chr = svr->characters[j];
+                server->character[j].cid = chr->cid;
+                iWA_Std_strcpy(server->character[j].name, chr->name);
+                server->character[j].grade = chr->grade;
+                server->character[j].race = chr->race;
+                server->character[j].nation = chr->nation;
+            }
+            server->character[j].cid = 0;
+        }
+        auth_info_block.server[i].sid = 0;  
+    }
+    else
+    {
+        auth_info_block.server_num = 0;
+        auth_info_block.server[0].sid = 0;  
+    }
+    i_waserver_auth__server_list_server__free_unpacked(list, NULL);
+    disable_auth_seesion();
+    iWA_Socket_DeinitSession();
+    if(auth_info_block.func_auth_msg_cb != NULL)    
+        ((iWApfunc_Auth_AuthMsgCb)auth_info_block.func_auth_msg_cb)(iWAenum_AUTH_CMD_SERVER_LIST, result, (void*)&auth_info_block.server[0]);
+}
 static iWAbool write_logon_client_packet(void)
 {
     iWA_Log("write_logon_client_packet()");
@@ -277,49 +368,16 @@ static iWAbool write_logreg_client_packet(iWAbool is_reg)
     return 1;
 }
 
-static iWAuint32 read_logon_server_packet(void)
-{
-    IWAserverAuth__LogRegServer  *logreg;
-    iWAuint8 *p = auth_info_block.packet;
-    iWAuint16 len;
-    iWAuint32 result;
     
-    iWA_Log("read_logon_server_packet()");
 
-    len = iWA_Net_ReadPacketUint16(p);
-    logreg = i_waserver_auth__log_reg_server__unpack(NULL, len, p+4);
-    result = (iWAuint32)logreg->result;   
 
-    if(logreg->result == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
-    {
-        if(logreg->has_b)   iWA_Net_ReadPacketBigNumber(logreg->b.data, logreg->b.len, &(auth_info_block.B)); 
-        if(logreg->has_g)   iWA_Net_ReadPacketBigNumber(logreg->g.data, logreg->g.len, &(auth_info_block.g)); 
-        if(logreg->has_n)   iWA_Net_ReadPacketBigNumber(logreg->n.data, logreg->n.len, &(auth_info_block.N)); 
-        if(logreg->has_s)   iWA_Net_ReadPacketBigNumber(logreg->s.data, logreg->s.len, &(auth_info_block.s)); 
-    }
     
-    i_waserver_auth__log_reg_server__free_unpacked(logreg, NULL);
     
-    return result;
-}
 
-static iWAuint32 read_reg_server_packet(void)
-{
-    IWAserverAuth__LogRegServer  *logreg;
-    iWAuint8 *p = auth_info_block.packet;
-    iWAuint16 len;
-    iWAuint32 result;
 
-    iWA_Log("read_reg_server_packet()");
 
-    len = iWA_Net_ReadPacketUint16(p);
-    logreg = i_waserver_auth__log_reg_server__unpack(NULL, len, p+4);
-    result = (iWAuint32)logreg->result;   
 
-    i_waserver_auth__log_reg_server__free_unpacked(logreg, NULL);
 
-    return result;
-}
 
 
 
@@ -351,31 +409,18 @@ static iWAbool write_proof_client_packet(void)
     return 1;
 }
 
-static iWAbool read_proof_server_packet(void)
-{
-    IWAserverAuth__ProofServer *proof;
-    iWAuint8 *p = auth_info_block.packet;
-    iWAuint16 len;
-    iWAuint32 result;
     
-    iWA_Log("read_proof_server_packet()");
 
-    len = iWA_Net_ReadPacketUint16(p);
 
-    proof = i_waserver_auth__proof_server__unpack(NULL, len, p+4);
-    result = proof->result;
 
-  //  iWA_Net_ReadPacketBigNumber(proof->m2.data, proof->m2.len, &(auth_info_block.M2)); 
 
-    i_waserver_auth__proof_server__free_unpacked(proof, NULL);
 
-    return result;
-}
 
 static iWAbool write_server_list_client_packet(void) 
 {
     IWAserverAuth__ServerListClient list;
     iWAuint8 *p = auth_info_block.packet;
+    iWAuint32 result;
     
     iWA_Log("write_server_list_client_packet()");
 
@@ -391,82 +436,27 @@ static iWAbool write_server_list_client_packet(void)
     return 1;
 }
 
-static iWAbool read_server_list_server_packet(void)
-{
-    IWAserverAuth__ServerListServer *list;
-    IWAserverAuth__ServerListServer__Server *svr;
-    IWAserverAuth__ServerListServer__Server__Character *chr;
-    iWAuint8 *p = auth_info_block.packet;
-    iWAuint16 len;
-    iWAuint16 i;
-    iWAstruct_Auth_Server *server;
 
-    iWA_Log("read_server_list_server_packet()");
 
-    len = iWA_Net_ReadPacketUint16(p);
 
-    list = i_waserver_auth__server_list_server__unpack(NULL, len, p+4);
 
-    /* fill iWAstruct_Auth_Server */
-    auth_info_block.server_num = (iWAuint16)list->num;
-    for(i = 0; i < auth_info_block.server_num; i++)
-    {
-        svr = list->servers[i];
-        server = &auth_info_block.server[i];
-        iWA_Std_memset((void*)server, 0, sizeof(iWAstruct_Auth_Server));
-        server->region = svr->region;
-        server->status = svr->status;
-        iWA_Std_strcpy(server->name, svr->name);
-        if(svr->hit != NULL)    iWA_Std_strcpy(server->hit, svr->hit);
-        iWA_Std_strcpy(server->address, svr->address);
-        server->port = svr->port;
 
-        server->character_num = svr->n_characters;
         
-        if(server->character_num > 0)
-        {
-            chr = svr->characters[0];
         
-            server->character_grade = chr->grade;
-            iWA_Std_strcpy(server->character_name, chr->name);
-            server->character_race = chr->race;
-            server->character_nation = chr->nation;
-        }
-    }
 
-    auth_info_block.server[i].region = 0;   /* set server list END flag */
 
-    i_waserver_auth__server_list_server__free_unpacked(list, NULL);
 
-    return 1;
-}
-
-#if 0
-static iWAint8* bn_to_hex(BIGNUM *bn)   /* BN_bn2hex NOT release memory, using this alternative */
-{
-    static const iWAint8 hex[]="0123456789ABCDEF";
-    iWAuint8 bin[250];
-    iWAint32 len, i;
-
-    len = BN_bn2bin(bn, bin);
-    for(i = 0; i < len; i++)
-    {
-        bn_to_hex_buf[i*2] = hex[bin[i] >> 4];
-        bn_to_hex_buf[i*2 + 1] = hex[bin[i] & 0x0f];
-    }
-    bn_to_hex_buf[i*2] = 0x00;
-
-    return bn_to_hex_buf;
-}
-#endif
 
 static iWAint8* bn_to_hex(BIGNUM *bn)   /* BN_bn2hex NOT release memory, using this alternative */
 {
+
+
+
     iWAint32 i,j,v,z=0;
     iWAint8 *p;
     static const iWAint8 hex[]="0123456789ABCDEF";
     iWAint32 len;
-    p = bn_to_hex_buf;
+    p = auth_info_block.bn_to_hex_buf;
     if (bn->neg)    *(p++) = '-';
     if (BN_is_zero(bn))     *(p++) = '0';
     for (i = bn->top - 1; i >= 0; i--)
@@ -484,7 +474,7 @@ static iWAint8* bn_to_hex(BIGNUM *bn)   /* BN_bn2hex NOT release memory, using t
         }
     }
     *p = 0x00;
-    return bn_to_hex_buf;
+    return auth_info_block.bn_to_hex_buf;
 }
 static void calculate_password_hash(iWAint8 *username, iWAint8 *password, BIGNUM *hash)
 {
@@ -734,67 +724,153 @@ void iWA_Auth_DoReceive(void)
 /****************************  iWA_Auth_DoAuth()  usage sample ***********************************/
 
 
-static void auth_msg_callback(iWAuint32 msg, void *data)
+static void auth_msg_callback(iWAuint32 cmd, iWAint32 para1, void *para2)
 {
 
     iWAstruct_Auth_Server *server;
+    iWAstruct_Character  *character;
+    iWAint32 i;
 
-    iWA_Log("auth_msg_callback msg: 0x%02x", msg);
+    iWA_Log("auth_msg_callback cmd:%d para1:%d", cmd, para1);
     
-    switch(msg)
+    switch(cmd)
     {
-        case iWAenum_AUTH_MSG_AUTH_OK:
-            iWA_Log("Pass Auth, Start Getting Server List");
+        case iWAenum_AUTH_CMD_REG:
+            if(para1 == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+            {
+                iWA_Log("Register user success");
+#if 0
+                iWA_Auth_DoAuthSample();
+#endif
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNPACK_MESSAGE_ERROR)
+            {
+                iWA_Log("Register user fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__REG_USERNAME_EMPTY)
+            {
+                iWA_Log("Register user fail, username is empty");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__REG_PASSWORD_EMPTY)
+            {
+                iWA_Log("Register user fail, password is empty");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__REG_DB_QUERY_ERROR)
+            {
+                iWA_Log("Register user fail, query db error");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__REG_USERNAME_ALREADY_EXISTS)
+            {
+                iWA_Log("Register user fail, username already exists");            
+            }            
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__REG_DB_INSERT_ERROR)
+            {
+                iWA_Log("Register user fail, insert db error");                 
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Register user fail, unknown error");
+            }
             break;
-        case iWAenum_AUTH_MSG_AUTH_CONNECT_ERROR:
-            iWA_Log("Connect Server Error");
+        case iWAenum_AUTH_CMD_LOGON:
+            if(para1 == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+            {
+                iWA_Log("Logon user in proofing");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNPACK_MESSAGE_ERROR)
+            {
+                iWA_Log("Logon user fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__LOGON_USERNAME_EMPTY)
+            {
+                iWA_Log("Logon user fail, username is empty");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__LOGON_DB_QUERY_ERROR)
+            {
+                iWA_Log("Logon user fail, query db error");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__LOGON_ACCOUNT_NOEXIST)
+            {
+                iWA_Log("Logon user fail, account not exist");                 
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Logon user fail, unknown error");
+            }
             break;
-         case iWAenum_AUTH_MSG_AUTH_INVALID_USERNAME:
-            iWA_Log("Username Invalid");
+        case iWAenum_AUTH_CMD_PROOF:
+            if(para1 == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+            {
+                iWA_Log("Logon user pass, getting server list");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNPACK_MESSAGE_ERROR)
+            {
+                iWA_Log("Logon user fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__PROOF_AVALUE_INCORRECT)
+            {
+                iWA_Log("Logon user fail, A value incorrect");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__PROOF_M1VALUE_INCORRECT)
+            {
+                iWA_Log("Logon user fail, M1 value incorrect");            
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__PROOF_MVALUE_UNMATCH)
+            {
+                iWA_Log("Logon user fail, M value unmatch");                 
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__PROOF_DB_UPDATE_ERROR)
+            {
+                iWA_Log("Logon user fail, db update error");                 
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Logon user fail, unknown error");
+            }
             break;
-        case iWAenum_AUTH_MSG_AUTH_INVALID_PASSWORD:
-            iWA_Log("Password Incorrect");
-            break;
-        case iWAenum_AUTH_MSG_AUTH_SERVER_LIST:
+        case iWAenum_AUTH_CMD_SERVER_LIST:
+            if(para1 == I_WASERVER_AUTH__RESULT_CODE__SUCCESS)
+            {
             iWA_Log("Game Server List:");
 
             /* read server list */
-            server = (iWAstruct_Auth_Server*)data;
-            while(server->region > 0)
+                server = (iWAstruct_Auth_Server*)para2;
+                while(server->sid > 0)
             {
-                iWA_Log("[Server %s]  %s:%d", server->name, server->address, server->port);
+                    iWA_Log("[Server%d %s]  %s:%d", server->sid, server->name, server->address, server->port);
+                    for(i = 0; i < server->character_num; i++)
+                    {
+                        character = &server->character[i];
+                        iWA_Log("    character<%d> name:%s, grade:%d, race:%d, nation:%d", character->cid, character->name, character->grade, character->race, character->nation);
+                    }
                 ++server;
             }
 
 #if 0
             /* connect first game server */
-            server = (iWAstruct_Auth_Server*)data;
-            if(server->region > 0)
+                server = (iWAstruct_Auth_Server*)para2;
+                if(server->sid > 0)
             {
                 iWA_World_Init();
                 iWA_World_StartSample(server->address, server->port);
             }
 #endif
-
-            break;
-        case iWAenum_AUTH_MSG_REG_OK:
-            iWA_Log("Create Account OK");
-            break;
-        case iWAenum_AUTH_MSG_REG_CONNECT_ERROR:
-            iWA_Log("Connect Server Error");
-            break;
-        case iWAenum_AUTH_MSG_REG_USERNAME_EXIST:
-            iWA_Log("Username already exists");
-            break;
-        case iWAenum_AUTH_MSG_REG_CREATE_FAIL:
-            iWA_Log("Create Account Fail");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNPACK_MESSAGE_ERROR)
+            {
+                iWA_Log("Get server list fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__SERVER_LIST_DB_QUERY_ERROR)
+            {
+                iWA_Log("Get server list fail, db query error");                 
+            }            
+            else if(para1 == I_WASERVER_AUTH__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Get server list fail, unknown error");
+            }
             break;        
     }
 
-#if 0
-    if(msg >= iWAenum_AUTH_MSG_REG_OK)
-        iWA_Auth_DoAuthSample();
-#endif
 }
 
 #define _AUTH_USERNAME_        "LOUHAO3"

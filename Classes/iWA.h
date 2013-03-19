@@ -47,23 +47,24 @@ typedef unsigned int       iWAbool;
 
 enum
 {
-    iWAenum_AUTH_CMD_REG            = 0x00,
-    iWAenum_AUTH_CMD_LOGON        = 0x01,
-    iWAenum_AUTH_CMD_PROOF    = 0x02,
-    iWAenum_AUTH_CMD_SERVER_LIST       = 0x03,
+    iWAenum_AUTH_CMD_REG            = 0x01,
+    iWAenum_AUTH_CMD_LOGON        = 0x02,
+    iWAenum_AUTH_CMD_PROOF    = 0x03,
+    iWAenum_AUTH_CMD_SERVER_LIST       = 0x04,
 };
 
 enum
 {
-    iWAenum_GAME_CMD_AUTH_CHANLLEGE        = 0x00,
-    iWAenum_GAME_CMD_AUTH_SEESION            = 0x01,
-    iWAenum_GAME_CMD_AUTH_RESPONSE          = 0x02,
-    iWAenum_GAME_CMD_CHAR_ENUM       = 0x03,
-    iWAenum_GAME_CMD_CHAR_CREATE       = 0x04,
-    iWAenum_GAME_CMD_CHAR_DELETE       = 0x05,
-    iWAenum_GAME_CMD_PLAYER_LOGIN       = 0x06,    
+    iWAenum_GAME_CMD_AUTH_CHANLLEGE        = 0x01,
+    iWAenum_GAME_CMD_AUTH_SEESION            = 0x02,
+    iWAenum_GAME_CMD_AUTH_RESPONSE          = 0x03,
+    iWAenum_GAME_CMD_CHAR_ENUM       = 0x04,
+    iWAenum_GAME_CMD_CHAR_CREATE       = 0x05,
+    iWAenum_GAME_CMD_CHAR_DELETE       = 0x06,
+    iWAenum_GAME_CMD_PLAYER_LOGIN       = 0x07,    
 };
 
+#if 0
 
 enum
 {
@@ -72,16 +73,19 @@ enum
     iWAenum_WORLD_MSG_CHAR_CREATE,
     iWAenum_WORLD_MSG_CHAR_DELETE
 };
+#endif
 
+#if 0
 enum
 {
     iWAenum_WORLD_STATUS_OK                    =  0x00, 
     iWAenum_WORLD_STATUS_FAIL
 };
+#endif
 
 enum
 {
-    iWAenum_CHARACTER_RACE_DOULUO    = 0,
+    iWAenum_CHARACTER_RACE_DOULUO    = 1,
     iWAenum_CHARACTER_RACE_GUISHA,
     iWAenum_CHARACTER_RACE_LINGZUN,
     iWAenum_CHARACTER_RACE_WUHUANG
@@ -89,12 +93,12 @@ enum
 
 enum
 {
-    iWAenum_CHARACTER_NATION_HAOTIAN    = 0,
+    iWAenum_CHARACTER_NATION_HAOTIAN    = 1,
     iWAenum_CHARACTER_NATION_WUCHEN,
     iWAenum_CHARACTER_NATION_CANGHAI
 };
 
-
+#if 0
 enum
 {
     iWAenum_AUTH_MSG_AUTH_OK                                         = 0x00,
@@ -108,10 +112,11 @@ enum
     iWAenum_AUTH_MSG_REG_USERNAME_EXIST                    = 0x12,    
     iWAenum_AUTH_MSG_REG_CREATE_FAIL                           = 0x13,        
 };
+#endif
 
 enum
 {
-    iWAenum_AUTH_SERVER_STATUS_NEW,
+    iWAenum_AUTH_SERVER_STATUS_NEW  =  1,
     iWAenum_AUTH_SERVER_STATUS_HOT,
     iWAenum_AUTH_SERVER_STATUS_MAINTAIN,
 };
@@ -120,12 +125,21 @@ enum
 #define iWAmacro_AUTH_SERVER_ADDRESS_SIZE    (20)
 #define iWAmacro_AUTH_SERVER_HIT_SIZE             (32)
 
-#define iWAmacro_WORLD_CHARACTER_NAME_SIZE     (32)
-//#define iWAmacro_WORLD_CHARACTER_RACE_SIZE     (20)
+#define iWAmacro_WORLD_CHARACTER_NAME_MAXIUM          (32)
+#define iWAmacro_WORLD_CHARACTER_NUM_MAXIUM          (10 + 1)
 //#define iWAmacro_WORLD_CHARACTER_NATION_SIZE   (20)
+typedef struct
+{
+    iWAuint32   cid;
+    iWAuint8     name[iWAmacro_WORLD_CHARACTER_NAME_MAXIUM];
+    iWAuint16   grade;    
+    iWAuint8     race;
+    iWAuint8     nation;
+}iWAstruct_Character;
 
 typedef struct
 {
+    iWAuint32   sid;
     iWAuint8     region;
     iWAuint8     status;
     iWAuint8     name[iWAmacro_AUTH_SERVER_NAME_SIZE];
@@ -133,20 +147,10 @@ typedef struct
     iWAuint8     address[iWAmacro_AUTH_SERVER_ADDRESS_SIZE];
     iWAuint16   port;
     iWAuint16   character_num;
-    iWAuint16   character_grade;    
-    iWAuint8     character_race;
-    iWAuint8     character_nation;    
-    iWAuint8     character_name[iWAmacro_WORLD_CHARACTER_NAME_SIZE];
+    iWAstruct_Character character[iWAmacro_WORLD_CHARACTER_NUM_MAXIUM];
 }iWAstruct_Auth_Server;
 
-typedef struct
-{
-    iWAuint32     cid;
-    iWAuint8     name[iWAmacro_WORLD_CHARACTER_NAME_SIZE];
-    iWAuint16   grade;    
-    iWAuint8     race;
-    iWAuint8     nation;
-}iWAstruct_Character;
+
 
 
 extern void iWA_Log(const iWAint8 *pszFormat, ...);

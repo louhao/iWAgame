@@ -3,14 +3,13 @@
 #include "iWA.h"
 
 
-typedef void (*iWApfunc_World_WorldMsgCb)(iWAuint32 msg, iWAint32 para1, void* para2);
+typedef void (*iWApfunc_World_WorldMsgCb)(iWAuint32, iWAint32, void*);
 
 #define iWAmacro_WORLD_SEESION_INFO_USERNAME_MAXIUM             (64)
 #define iWAmacro_WORLD_SEESION_INFO_PACKET_MAXIUM                  (1024)
 #define iWAmacro_WORLD_SEESION_INFO_KEY_SIZE             (40)
 
-#define iWAmacro_WORLD_CHARACTER_NAME_MAXIUM          (32)
-#define iWAmacro_WORLD_CHARACTER_NUM_MAXIUM          (10)
+
 
 typedef struct
 {
@@ -114,8 +113,6 @@ static void handle_world_packet(void)
     {
         case iWAenum_GAME_CMD_AUTH_CHANLLEGE:
             handle_auth_challenge_server_packet();
-            write_auth_session_client_packet();
-            send_world_packet();
             break;
             
         case iWAenum_GAME_CMD_AUTH_RESPONSE:
@@ -164,14 +161,14 @@ static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint
     iWAuint32 t;
     iWAuint8 x;
 
-    iWA_Log("write_client_packet_header()");
+    //iWA_Log("write_client_packet_header()");
 
     if(packet == NULL)     return;
   
     iWA_Net_WritePacketUint16(packet, size);
     iWA_Net_WritePacketUint16(packet+2, cmd);
 
-    iWA_Dump(packet, iWAmacro_WORLD_PACKET_HEADER_SIZE);
+    //iWA_Dump(packet, iWAmacro_WORLD_PACKET_HEADER_SIZE);
 
     if(world_session_info_block.do_crypto)
     {
@@ -186,7 +183,7 @@ static void write_client_packet_header(iWAuint8* packet, iWAuint16 size, iWAuint
         }
     }
 
-    iWA_Dump(packet, iWAmacro_WORLD_PACKET_HEADER_SIZE);
+    //iWA_Dump(packet, iWAmacro_WORLD_PACKET_HEADER_SIZE);
 }
 
 
@@ -197,11 +194,11 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
     iWAuint16 size, cmd;
     iWAuint8 recv_i, recv_j;
 
-    iWA_Log("split_world_packet()");
+    //iWA_Log("split_world_packet()");
 
     if(pkt == NULL || len < iWAmacro_WORLD_PACKET_HEADER_SIZE)   return 0;
 
-    iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
+    //iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
 
     if(!world_session_info_block.do_crypto)
     {
@@ -228,7 +225,7 @@ static iWAuint32 split_world_packet(iWAuint8 *pkt, iWAuint32 len)
     
     }
     
-    iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
+    //iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
 
     size = iWA_Net_ReadPacketUint16(pkt);
 
@@ -240,11 +237,11 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len)
     iWAuint32 t;
     iWAuint8 x;
 
-    iWA_Log("decrypt_world_packet()");
+    //iWA_Log("decrypt_world_packet()");
 
     if(pkt == NULL || len < iWAmacro_WORLD_PACKET_HEADER_SIZE)   return;
 
-    iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
+    //iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
 
     if(world_session_info_block.do_crypto)
     {
@@ -258,7 +255,7 @@ static void decrypt_world_packet(iWAuint8 *pkt, iWAuint32 len)
         }
     }
     
-    iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
+    //iWA_Dump(pkt, iWAmacro_WORLD_PACKET_HEADER_SIZE);
 }
 
 
@@ -298,6 +295,8 @@ static void handle_auth_challenge_server_packet(void)
     iWA_Crypto_Sha1ResultBigNumber(sha_ctx, &world_session_info_block.D);
 
     iWA_Free((iWAuint8*)sha_ctx);
+    write_auth_session_client_packet();
+    send_world_packet();
 }
 
 static void handle_auth_response_server_packet(void)
@@ -305,7 +304,7 @@ static void handle_auth_response_server_packet(void)
     IWAserverGame__AuthResponseServer *response;
     iWAuint8 *p = world_session_info_block.packet;
     iWAuint16 len;
-    iWAint32 result, status;
+    iWAint32 result;
 
     iWA_Log("handle_smsg_auth_response_packet()");
 
@@ -316,26 +315,22 @@ static void handle_auth_response_server_packet(void)
 
     if(result == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
     {
-        iWA_Log("auth ok");
 
-        status = iWAenum_WORLD_STATUS_OK;
         world_session_info_block.do_crypto = 1;
     }
     else
     {
-        iWA_Log("auth failed, code 0x%02x", result);
 
         /* close seesion */
         disable_world_seesion();
         iWA_Socket_DeinitSession();
 
-        status = iWAenum_WORLD_STATUS_FAIL;
         world_session_info_block.do_crypto = 0;
     }
 
     /* send msg */
     if(world_session_info_block.func_msg_cb != NULL)    
-        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_AUTH, status, NULL);
+        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_GAME_CMD_AUTH_RESPONSE, result, NULL);
     
 }
 
@@ -348,14 +343,17 @@ static void handle_char_enum_server_packet(void)
     iWAuint16 len;
     iWAuint8 i;
     iWAstruct_Character  *character;
+    iWAint32 result;
 
     iWA_Log("handle_char_enum_server_packet()");
 
     len = iWA_Net_ReadPacketUint16(p);
     char_enum = i_waserver_game__char_enum_server__unpack(NULL, len, p+4);
-    world_session_info_block.character_num = char_enum->char_num;
+    result = char_enum->result;
 
-    iWA_Log("character number : %d", world_session_info_block.character_num);
+    if(result == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
+    {
+        world_session_info_block.character_num = (char_enum->n_characters) < iWAmacro_WORLD_CHARACTER_NUM_MAXIUM ? (char_enum->n_characters) : (iWAmacro_WORLD_CHARACTER_NUM_MAXIUM -1);
 
 
     for(i = 0; i < world_session_info_block.character_num; i++)
@@ -369,14 +367,21 @@ static void handle_char_enum_server_packet(void)
         character->grade = chr->grade;
         character->nation = chr->nation;
 
-        iWA_Log("character<%d> name:%s, grade:%d, race:%d, nation:%d", i+1, character->name, character->grade, character->race, character->nation);
+            // iWA_Log("character<%d> name:%s, grade:%d, race:%d, nation:%d", i+1, character->name, character->grade, character->race, character->nation);
     }
 
+        world_session_info_block.character[i].cid = 0;
+    }
+    else
+    {
+        world_session_info_block.character_num = 0;
+        world_session_info_block.character[0].cid = 0;
+    }
     i_waserver_game__char_enum_server__free_unpacked(char_enum, NULL);
     
     /* send msg */
     if(world_session_info_block.func_msg_cb != NULL)    
-        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_CHAR_ENUM, world_session_info_block.character_num, &world_session_info_block.character[0]);
+        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_GAME_CMD_CHAR_ENUM, result, &world_session_info_block.character[0]);
     
 }
 
@@ -386,23 +391,20 @@ static void handle_char_create_server_packet(void)
     IWAserverGame__CharCreateServer *response;
     iWAuint8 *p = world_session_info_block.packet;
     iWAuint16 len;
-    iWAint32 status;
+    iWAint32 result;
 
     iWA_Log("handle_char_create_server_packet()");
 
     len = iWA_Net_ReadPacketUint16(p);
     response = i_waserver_game__char_create_server__unpack(NULL, len, p+4);
-    if(response->result == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
+    result = response->result;
+    if(result == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
     {
         world_session_info_block.character[0].cid = response->cid;
-        iWA_Log("character create ok");
-        status = iWAenum_WORLD_STATUS_OK;
     }
     else
     {
-        iWA_Log("character create failed, 0x%02x", response->result);
         
-        status = iWAenum_WORLD_STATUS_FAIL;
 
         /* close seesion */
         disable_world_seesion();
@@ -413,7 +415,7 @@ static void handle_char_create_server_packet(void)
 
     /* send msg */
     if(world_session_info_block.func_msg_cb != NULL)    
-        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_CHAR_CREATE, status, NULL);
+        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_GAME_CMD_CHAR_CREATE, result, NULL);
 }
 
 static void handle_char_delete_server_packet(void)
@@ -421,22 +423,19 @@ static void handle_char_delete_server_packet(void)
     IWAserverGame__CharDeleteServer *response;
     iWAuint8 *p = world_session_info_block.packet;
     iWAuint16 len;
-    iWAint32 status;
+    iWAint32 result;
 
     iWA_Log("handle_char_delete_server_packet()");
 
     len = iWA_Net_ReadPacketUint16(p);
     response = i_waserver_game__char_delete_server__unpack(NULL, len, p+4);
-    if(response->result == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
+    result = response->result;
+    if(result == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
     {
-        iWA_Log("character delete ok");
-        status = iWAenum_WORLD_STATUS_OK;
     }
     else
     {
-        iWA_Log("character delete failed, 0x%02x", response->result);
         
-        status = iWAenum_WORLD_STATUS_FAIL;
 
         /* close seesion */
         disable_world_seesion();
@@ -447,7 +446,7 @@ static void handle_char_delete_server_packet(void)
 
     /* send msg */
     if(world_session_info_block.func_msg_cb != NULL)    
-        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_WORLD_MSG_CHAR_DELETE, status, NULL);
+        ((iWApfunc_World_WorldMsgCb)world_session_info_block.func_msg_cb)(iWAenum_GAME_CMD_CHAR_DELETE, result, NULL);
 }
 
 
@@ -659,66 +658,130 @@ iWAbool iWA_World_Login(iWAuint32 cid)
 
 /****************************  iWA_World_Start()  usage sample ***********************************/
 
-static void world_msg_callback(iWAuint32 msg, iWAint32 para1, void *para2)
+static void world_msg_callback(iWAuint32 cmd, iWAint32 para1, void *para2)
 {
-    iWAuint32 i;
     iWAstruct_Character  *character;
 
-    iWA_Log("world_msg_callback msg: 0x%02x", msg);
+    iWA_Log("world_msg_callback msg: 0x%02x", cmd);
 
-    switch(msg)
+    switch(cmd)
     {
-        case iWAenum_WORLD_MSG_AUTH:
-            if(para1 == iWAenum_WORLD_STATUS_OK)
+        case iWAenum_GAME_CMD_AUTH_RESPONSE:
+            if(para1 == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
             {
-                iWA_Log("Pass Auth, Start Getting Character List");
+                iWA_Log("Game server auth pass, getting character list");
                 iWA_World_GetCharEnum();
             }
-            else
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNPACK_MESSAGE_ERROR)
             {
-                iWA_Log("Game Server Auth Fail");    
+                iWA_Log("Game server auth fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__AUTH_RESPONSE_DB_QUERY_ERROR)
+            {
+                iWA_Log("Game server auth fail, db query error");            
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__AUTH_RESPONSE_ACCOUNT_NOEXIST)
+            {
+                iWA_Log("Game server auth fail, account not exist");            
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__AUTH_RESPONSE_HASH_CHECK_ERROR)
+            {
+                iWA_Log("Game server auth fail, hash value check error");                 
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Game server auth fail, unknown error");
             }
             break;
 
-        case iWAenum_WORLD_MSG_CHAR_ENUM:
-            iWA_Log("Character Num : %d", para1);
-            for(i = 0, character = (iWAstruct_Character*)para2; i < para1; i++)
+        case iWAenum_GAME_CMD_CHAR_ENUM:
+            if(para1 == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
             {
-                iWA_Log("character<%d> name:%s, grade:%d, race:%d, nation:%d", i+1, character[i].name, character[i].grade, character[i].race, character[i].nation);
+                iWA_Log("Character list get ok");
+                character = (iWAstruct_Character*)para2;
+                if(character->cid > 0)
+            {
+                    while(character->cid > 0)
+                    {
+                        iWA_Log("character<%d> name:%s, grade:%d, race:%d, nation:%d", character->cid, character->name, character->grade, character->race, character->nation);
+                        character++;
             }
-            if(para1 == 0)
+                    #if 1
+                    iWA_Log("Character<%d> login", ((iWAstruct_Character*)para2)->cid);
+                    iWA_World_Login(((iWAstruct_Character*)para2)->cid);
+                    #else
+                    iWA_Log("Character<%d> delete", ((iWAstruct_Character*)para2)->cid);
+                    iWA_World_DeleteChar(((iWAstruct_Character*)para2)->cid);
+                    #endif
+                }
+                else
             {
-                iWA_Log("Creating Character");
-                iWA_World_CreateChar("lly", iWAenum_CHARACTER_RACE_GUISHA, iWAenum_CHARACTER_NATION_WUCHEN);
+                    iWA_Log("Creating character");
+                    iWA_World_CreateChar("lkk", iWAenum_CHARACTER_RACE_GUISHA, iWAenum_CHARACTER_NATION_WUCHEN);
             }
-            else
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNPACK_MESSAGE_ERROR)
             {
-                iWA_Log("Character %s Login", character[0].name);
-                //iWA_World_Login(character[0].guid);
-                iWA_World_DeleteChar(character[0].cid);
+                iWA_Log("Character list get fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__CHAR_ENUM_DB_QUERY_ERROR)
+            {
+                iWA_Log("Character list get fail, db query error");                 
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Character list get fail, unknown error");
             }
             break;
             
-        case iWAenum_WORLD_MSG_CHAR_CREATE:
-            if(para1 == iWAenum_WORLD_STATUS_OK)
+        case iWAenum_GAME_CMD_CHAR_CREATE:
+            if(para1 == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
             {
-                iWA_Log("Create Character OK, Refreshing Character List");
+                iWA_Log("Character create ok, get character list");
                 iWA_World_GetCharEnum();
             }
-            else
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNPACK_MESSAGE_ERROR)
             {
-                iWA_Log("Create Character Fail");    
+                iWA_Log("Character create fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__CHAR_CREATE_NAME_EMPTY)
+            {
+                iWA_Log("Character create fail, character name empty");                 
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__CHAR_CREATE_DB_QUERY_ERROR)
+            {
+                iWA_Log("Character create fail, db query error");                 
+            }      
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__CHAR_CREATE_NAME_ALREADY_EXISTS)
+            {
+                iWA_Log("Character create fail, name already exists");                 
+            }            
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__CHAR_CREATE_DB_INSERT_ERROR)
+            {
+                iWA_Log("Character create fail, db insert error");                 
+            }            
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Character create fail, unknown error");
             }
             break;
 
-        case iWAenum_WORLD_MSG_CHAR_DELETE:
-            if(para1 == iWAenum_WORLD_STATUS_OK)
+        case iWAenum_GAME_CMD_CHAR_DELETE:
+            if(para1 == I_WASERVER_GAME__RESULT_CODE__SUCCESS)
             {
-                iWA_Log("Delete Character OK");
+                iWA_Log("Character delete ok");
             }
-            else
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNPACK_MESSAGE_ERROR)
             {
-                iWA_Log("Delete Character Fail");    
+                iWA_Log("Character delete fail, unpack message error");
+            }
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__CHAR_DELETE_DB_DELETE_ERROR)
+            {
+                iWA_Log("Character delete fail, db delete error");                 
+            }            
+            else if(para1 == I_WASERVER_GAME__RESULT_CODE__UNKNOWN_ERROR)
+            {
+                iWA_Log("Character delete fail, unknown error");
             }
             break;
             
